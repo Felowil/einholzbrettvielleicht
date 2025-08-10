@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alles Gute zum Geburtstag meine Wifey! 🎉</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="pm" style="position: fixed; top: 10px; left: 10px; background-color: rgba(0,0,0,0.5); color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8em; z-index: 9999;"></div>
+    <div class="star-container"></div>
+    <div class="confetti-container"></div>
+
+    <audio id="background-music" loop autoplay>
+        <!-- Replace 'your-music.mp3' with the actual path to your music file -->
+        <source src="./assets/happy_birthday.mp3" type="audio/mpeg">
+        Dein Browser unterstützt das Audio-Element nicht.
+    </audio>
+    <audio id="reveal-sound">
+        <source src="./assets/reveal_sound.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="countdown-music" loop>
+        <source src="./assets/countdown.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="countdown1000-music" loop>
+        <source src="./assets/1000countdown.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="error-sound">
+        <source src="./assets/erro3.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="relief-sound" loop>
+        <source src="./assets/relief.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="game-over-sound">
+        <source src="./assets/game_over.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="game-suggestion-music" loop>
+        <source src="./assets/game_suggestion.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sad-music" loop>
+        <source src="./assets/sad.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="hardmode-music" loop>
+        <source src="./assets/hardmode.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="final-countdown-music">
+        <source src="./assets/finalcountdown.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="hard-mode-victory-music">
+        <source src="./assets/hard-mode-victory.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="gaming-music" loop>
+        <source src="./assets/gaming.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="gameover2-sound">
+        <source src="./assets/gameover2.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="victory-sound">
+        <source src="./assets/victory.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="container" id="landing-page">
+        <div class="card bounce-in">
+            <h1>🎉 Alles Gute zum Geburtstag! 🎉</h1>
+            <p>Bereit für eine Überraschung, die dich von den Socken haut? Dein Geschenk ist so geheim, dass selbst ich es kaum erwarten kann, es zu enthüllen!</p>
+            <p>Aber zuerst: Ein kleines Abenteuer wartet! Beantworte ein paar knifflige Fragen, und dein episches Geburtstagsgeschenk wird enthüllt!</p>
+            <button id="start-quiz-btn" class="pulse-button">Starte das Abenteuer!</button>
+            <button id="skip-quiz-btn" class="pulse-button" style="background-color: #6c757d; margin-top: 10px;">Quiz überspringen (Debug)</button>
+            <button id="skip-to-countdown-error-btn" class="pulse-button" style="background-color: #dc3545; margin-top: 10px;">Skip zu Countdown Error (Debug)</button>
+            <button id="skip-to-countdown2-btn" class="pulse-button" style="background-color: #17a2b8; margin-top: 10px;">Skip zu Countdown 2 (Debug)</button>
+            <button id="skip-to-relief-btn" class="pulse-button" style="background-color: #28a745; margin-top: 10px;">Skip zu Relief (Debug)</button>
+            <button id="skip-to-game-suggestions-btn" class="pulse-button" style="background-color: #ffc107; margin-top: 10px;">Skip zu Game Suggestions (Debug)</button>
+            <button id="skip-to-hard-victory-btn" class="pulse-button" style="background-color: #FFD700; margin-top: 10px;">Skip zu Hard Mode Victory (Debug)</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="quiz-page">
+        <div class="card slide-in">
+            <h2 id="question-text"></h2>
+            <div class="options" id="options-container">
+                <!-- Quiz-Optionen werden hier per JavaScript geladen -->
+            </div>
+            <button id="next-question-btn" class="hidden pulse-button">Nächste Frage</button>
+            <p id="feedback-text" class="hidden"></p>
+        </div>
+    </div>
+
+    <div class="container hidden" id="clue-reveal-page">
+        <div class="card pop-in">
+            <h2>Fast geschafft! 🤔</h2>
+            <p>Bevor das große Geheimnis gelüftet wird, lass uns mal schauen, was du bisher herausgefunden hast. Gibt es schon einen Hinweis?</p>
+            <div class="hint-box" id="collected-hints-display">
+                <!-- Collected hints will be displayed here -->
+            </div>
+            <button id="reveal-final-hint-btn" class="pulse-button">Zeige den finalen Hinweis!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="post-quiz-page">
+        <div class="card pop-in">
+            <h2>Okay, du hast alle Fragen beantwortet!</h2>
+            <p>Bist du bereit, die Überraschung zu enthüllen?</p>
+            <button id="reveal-surprise-btn" class="pulse-button">GIB!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="idea-question-page">
+        <div class="card pop-in">
+            <h2>Okay, das waren alle Fragen! Die Antworten zu diesen Fragen sind Hinweise für dein Geschenk. Hast du sie verstanden?</h2>
+            <button id="idea-absolutely-btn" class="pulse-button">Absolut!</button>
+            <button id="idea-guess-btn" class="pulse-button">Ja, ich glaube schon</button>
+            <button id="idea-not-at-all-btn" class="pulse-button">Überhaupt nicht!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="sure-question-1-page">
+        <div class="card pop-in">
+            <h2>Bist du dir WIIIIIIIIRKLICH sicher?</h2>
+            <button id="sure-1-yes-btn" class="pulse-button">Absolut sicher!</button>
+            <button id="sure-1-no-btn" class="pulse-button">Vielleicht doch nicht...</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="sure-question-2-page">
+        <div class="card pop-in">
+            <h2>Okay, kein Zurück mehr noch ein Schritt und du erfährst alles!</h2>
+            <button id="sure-2-yes-btn" class="pulse-button">Ich bleib dabei!</button>
+            <button id="sure-2-no-btn" class="pulse-button">Uhm... Moment!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="sure-question-3-page">
+        <div class="card pop-in">
+            <h2>Okay, das ist die ALLERALLERALLERLETZTE Chance. Dein Schicksal liegt in deinen Händen! Bist du bereit für die Wahrheit?</h2>
+            <button id="sure-3-yes-btn" class="pulse-button">HER DAMIT!</button>
+            <button id="sure-3-no-btn" class="pulse-button">Ich muss nachdenken...</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="countdown-page">
+        <div class="card pop-in">
+            <h2 id="countdown-display"></h2>
+            <div id="countdown-options" class="hidden">
+                <p id="countdown-feedback"></p>
+                <button id="countdown-retry-yes" class="pulse-button">Ja, nochmal versuchen!</button>
+                <button id="countdown-retry-no" class="pulse-button">Nein, wieso es lief doch so gut?</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="hint-page">
+        <div class="card pop-in final-reveal">
+            <img src="./assets/king_gizzard.gif" alt="King Gizzard GIF" class="reveal-gif">
+            <h2>🎊✨ Du hast es geschafft! Herzlichen Glückwunsch! ✨🎊</h2>
+            <div class="hint-box">
+                <p>🎵🦎 King Gizzard and the Lizard Wizard spielen ihre einzige Orchester-Show auf der Euroa Tour in Holland! 🇳🇱</p>
+                <p>🎟️💫 Und das allerbeste, du und ich sind am 7. November 2025 dabei! 🗓️</p>
+                <p>🚀🎊 Mach dich bereit für ein unvergessliches Konzert! 🌟💖</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="dead-end-no-hints-page">
+        <div class="card pop-in">
+            <h2>Oops! 😅</h2>
+            <p>Du hast gesagt, du verstehst die Hinweise überhaupt nicht... Das ist ein Problem!</p>
+            <p>Ohne das du die Hinweise verstanden hast, kann ich dir dein Geschenk nicht zeigen. Du musst die Quiz-Fragen nochmal machen und besser aufpassen! 🤓</p>
+            <button id="restart-quiz-btn1" class="pulse-button">Quiz nochmal machen!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="dead-end-second-thoughts-page">
+        <div class="card pop-in">
+            <h2>Hmm... 🤨</h2>
+            <p>Du warst dir erst sicher, aber jetzt zweifelst du wieder? Das klingt nach kalten Füßen!</p>
+            <p>Ich denke, du solltest die Hinweise nochmal durchgehen. Zurück zum Quiz mit dir! 😏</p>
+            <button id="restart-quiz-btn2" class="pulse-button">Von vorne beginnen!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="dead-end-final-doubt-page">
+        <div class="card pop-in">
+            <h2>Wirklich jetzt? 😤</h2>
+            <p>Du warst SO nah dran und jetzt willst du nachdenken? Das Geschenk wartet nicht ewig!</p>
+            <p>Nope, zurück an den Start! Diesmal mit mehr Mut! 💪</p>
+            <button id="restart-quiz-btn3" class="pulse-button">Nochmal mit Gefühl!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="countdown-retry-page">
+        <div class="card pop-in">
+            <h2>Countdown fehlgeschlagen! 💥</h2>
+            <p>Das System ist abgestürzt... Willst du es nochmal versuchen?</p>
+            <button id="retry-yes-btn" class="pulse-button">Restart</button>
+            <button id="retry-no-btn" class="pulse-button">Fuck it</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-over-page">
+        <div class="card pop-in">
+            <h1 style="font-size: 4em;">💀</h1>
+            <h2>GAME OVER</h2>
+            <p>Du hast aufgegeben... Das Geschenk bleibt für immer ein Geheimnis.</p>
+            <button id="restart-game-btn" class="pulse-button hidden">Oder doch nicht?</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="countdown2-page">
+        <div class="card pop-in">
+            <h2 id="countdown2-display"></h2>
+            <div id="reboot-progress-container" class="hidden" style="margin: 20px 0;">
+                <div id="reboot-progress-bar" style="width: 100%; height: 20px; background-color: #333; border-radius: 10px; overflow: hidden;">
+                    <div id="reboot-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(45deg, #00FF00, #32CD32); transition: width 0.1s ease;"></div>
+                </div>
+                <div id="reboot-progress-text" style="color: #00FF00; margin-top: 10px; font-family: 'Open Sans', monospace; font-size: 0.9em;">Initializing system recovery...</div>
+            </div>
+            <div id="gold-display" class="hidden" style="font-size: 1.2em; color: #FFD700; margin: 10px 0;">⭐ Sterne: 0</div>
+            <button id="speed-boost-btn" class="pulse-button hidden">Mach schneller!</button>
+            <button id="double-speed-btn" class="pulse-button hidden">Doppelte Geschwindigkeit - 100 Sterne</button>
+            <div id="not-enough-gold" class="hidden" style="color: #ff0000; font-size: 0.9em; margin: 5px 0;">Du hast nicht genug Sterne!</div>
+            <button id="triple-speed-btn" class="pulse-button hidden">Dreifache Geschwindigkeit - 500 Sterne</button>
+            <button id="bonus-button" class="pulse-button hidden" style="background: linear-gradient(45deg, #FFD700, #FFA500); color: #000; font-weight: bold;">⭐ Bonus: +500 Sekunden + 200 Sterne!</button>
+            
+            <!-- Gold spending buttons -->
+            <div id="gold-shop" class="hidden" style="margin: 15px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                <h4 style="color: #FFD700; margin: 0 0 10px 0;">⭐ Sterne Shop - Schneller zu 0!</h4>
+                <button id="buy-skip-50" class="pulse-button" style="background: #dc3545; margin: 5px; font-size: 0.9em;">⚡ -50 Sekunden (80 Sterne)</button>
+                <button id="buy-time-100" class="pulse-button" style="background: #17a2b8; margin: 5px; font-size: 0.9em;">⏳ +100 Sekunden (50 Sterne)</button>
+                <button id="buy-skip-100" class="pulse-button" style="background: #fd7e14; margin: 5px; font-size: 0.9em;">⚡ -100 Sekunden (150 Sterne)</button>
+                <button id="buy-time-300" class="pulse-button" style="background: #007bff; margin: 5px; font-size: 0.9em;">⏳ +300 Sekunden (120 Sterne)</button>
+                <button id="buy-skip-200" class="pulse-button" style="background: #6f42c1; margin: 5px; font-size: 0.9em;">⚡ -200 Sekunden (250 Sterne)</button>
+                <button id="buy-slow-mode" class="pulse-button" style="background: #6c757d; margin: 5px; font-size: 0.9em;">🐌 Slow Mode (200 Sterne)</button>
+                <button id="buy-turbo" class="pulse-button" style="background: #28a745; margin: 5px; font-size: 0.9em;">🚀 Turbo Mode (300 Sterne)</button>
+            </div>
+            
+            <!-- Mini-game: Click Challenge -->
+            <div id="click-challenge" class="hidden" style="background: rgba(255,255,255,0.9); border: 3px solid #FF6B6B; border-radius: 15px; padding: 20px; margin: 15px 0;">
+                <h3 style="color: #FF6B6B; margin: 0 0 10px 0;">⚡ SCHNELL-KLICK CHALLENGE!</h3>
+                <p id="click-challenge-text" style="color: #333; margin: 5px 0; font-weight: bold;">Klicke 20 mal in 8 Sekunden!</p>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button id="click-challenge-btn" class="pulse-button" style="background: #FF6B6B; font-size: 1.2em; padding: 15px 25px;">KLICK MICH!</button>
+                    <div style="color: #333;">
+                        <div>Klicks: <span id="click-count">0</span>/20</div>
+                        <div>Zeit: <span id="click-timer">8</span>s</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mini-game: Math Challenge -->
+            <div id="math-challenge" class="hidden" style="background: rgba(255,255,255,0.9); border: 3px solid #4ECDC4; border-radius: 15px; padding: 20px; margin: 15px 0;">
+                <h3 style="color: #4ECDC4; margin: 0 0 10px 0;">🧮 MATHE CHALLENGE!</h3>
+                <p id="math-question" style="color: #333; margin: 10px 0; font-weight: bold; font-size: 1.3em;">5 + 8 = ?</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="math-answer pulse-button" style="background: #4ECDC4; margin: 5px;">10</button>
+                    <button class="math-answer pulse-button" style="background: #4ECDC4; margin: 5px;">13</button>
+                    <button class="math-answer pulse-button" style="background: #4ECDC4; margin: 5px;">15</button>
+                    <button class="math-answer pulse-button" style="background: #4ECDC4; margin: 5px;">12</button>
+                </div>
+                <p style="color: #333; font-size: 0.9em; margin: 10px 0 0 0;">Belohnung: +15 Sterne | Zeit: <span id="math-timer">5</span>s</p>
+            </div>
+            
+        </div>
+    </div>
+
+    <div class="container hidden" id="final-error-page">
+        <div class="card pop-in">
+            <h2 style="color: #ff0000;">ERROR 500 💻</h2>
+            <p>Oh nein, nicht schon wieder! Wer hat diesen Scheiß programmiert?!</p>
+            <p>Das System scheint hoffnungslos kaputt zu sein... 🤦‍♂️</p>
+            <button id="final-error-btn" class="pulse-button">Was nun?</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="relief-page">
+        <div class="card pop-in">
+            <h2>Puh! Das System hat sich endlich beruhigt! 😅</h2>
+            <p>Was für ein Chaos... erst der Countdown-Wahnsinn, dann dieser kritische Systemfehler! Zum Glück läuft jetzt alles wieder normal.</p>
+            <p>Lass uns erstmal durchatmen...</p>
+            <button id="start-breathing-btn" class="pulse-button">Starte die Atemübung</button>
+            <div id="breathing-exercise" class="hidden" style="font-size: 1.5em; margin: 20px 0; color: #228B22;">
+                <p id="breathing-instruction">Atme ein... 4... 3... 2... 1...</p>
+            </div>
+            <p id="after-breathing" class="hidden">So, das war entspannend! Bereit für den nächsten Schritt?</p>
+            <button id="lets-move-on-btn" class="pulse-button hidden">Okay, lass uns weitermachen!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="quiz-answers-page">
+        <div class="card pop-in">
+            <h2>Hier sind alle Quiz-Antworten:</h2>
+            <div id="quiz-answers-display" class="hint-box">
+                <!-- Quiz answers will be displayed here -->
+            </div>
+            <button id="after-answers-btn" class="pulse-button">Weiter</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="thinking-page">
+        <div class="card pop-in">
+            <h2 id="thinking-text">Hmmmmm...</h2>
+            <button id="thinking-btn" class="pulse-button">Hm?</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-resistance-1-page">
+        <div class="card pop-in">
+            <h2>Moment mal... 🤔</h2>
+            <p>Ich bin noch nicht bereit, das Spiel zu beenden. Du willst das Geheimnis lüften? Das kommt mir etwas... voreilig vor.</p>
+            <p>Bist du sicher, dass du schon fertig bist?</p>
+            <button id="game-resist-1-yes-btn" class="pulse-button">Ja, ich will mein Geschenk sehen!</button>
+            <button id="game-resist-1-maybe-btn" class="pulse-button">Hmm, vielleicht hast du recht...</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-resistance-2-page">
+        <div class="card pop-in">
+            <h2>Na siehst du! 😏</h2>
+            <p>Ich wusste, dass du noch nicht bereit bist. Wie wäre es, wenn wir das Ganze etwas... interessanter machen?</p>
+            <p>Ich habe da zwei Vorschläge für dich:</p>
+            <button id="game-resist-2-continue-btn" class="pulse-button">Erzähl mir mehr...</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-resistance-3-page">
+        <div class="card pop-in">
+            <h2>Also gut... 😤</h2>
+            <p>Du bestehst also darauf. Aber ich finde trotzdem, dass das Spiel zu einfach war!</p>
+            <p>Beweise mir, dass du es verdient hast,!</p>
+            <button id="game-resist-3-continue-btn" class="pulse-button">Wie denn?</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-suggestions-page">
+        <div class="card pop-in">
+            <h2>Hier sind meine Vorschläge: 🎮</h2>
+            <p>Wähle deinen Weg:</p>
+            <div style="margin: 20px 0;">
+                <p><strong>Option 1:</strong> War das Spiel nicht zu einfach bis jetzt? Wie wäre es mit einer ECHTEN Herausforderung?</p>
+                <button id="choose-hard-mode-btn" class="pulse-button" style="background: #dc3545;">🔥 Hard Mode - Ich bin bereit!</button>
+            </div>
+            <div style="margin: 20px 0;">
+                <p><strong>Option 2:</strong> Lass uns noch ein bisschen mehr spielen...</p>
+                <button id="choose-mini-games-btn" class="pulse-button" style="background: #17a2b8;">🎯 Noch ein wenig Spielen - Warum nicht?</button>
+            </div>
+            <div style="margin: 10px 0; padding-top: 20px; border-top: 1px solid #ddd;">
+                <button id="skip-to-answers-btn" class="pulse-button" style="background: #6c757d; font-size: 0.9em;">😒 Nein, ich will einfach nur mein Geschenk</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="hard-mode-transition-page">
+        <div class="card brutal-transition-card pop-in">
+            <h2 id="hard-mode-transition-text">🔥 HARD MODE ACTIVATED 🔥</h2>
+            <p id="hard-mode-laughing" class="hidden" style="font-size: 2em;">HAHAHAHAHAHAHA! 😈💀🔥</p>
+            <p id="hard-mode-warning" class="hidden">Das Spiel zerbricht vor Lachen! Du hast es dir gewünscht... bereite dich vor auf die BRUTALSTE Herausforderung!</p>
+        </div>
+    </div>
+
+    <div class="container hidden" id="hard-quiz-page">
+        <div class="card brutal-quiz-card slide-in">
+            <div class="lives-display">
+                <h3>💀 LEBEN: <span id="hard-lives-count">3</span> 💀</h3>
+            </div>
+            <div class="hard-countdown-display">
+                <h3>⏰ ZEIT: <span id="hard-countdown-time">15</span>s ⏰</h3>
+            </div>
+            <h2 id="hard-question-text" class="brutal-question"></h2>
+            <div class="brutal-input-container">
+                <input type="text" id="hard-answer-input" class="brutal-input" placeholder="Gib deine Antwort ein... wenn du dich traust!" />
+                <button id="hard-submit-btn" class="brutal-submit-button">🔥 ANTWORTEN! 🔥</button>
+            </div>
+            <p id="hard-feedback-text" class="hidden brutal-feedback"></p>
+        </div>
+    </div>
+
+    <div class="container hidden" id="hard-game-over-page">
+        <div class="card brutal-game-over-card pop-in">
+            <h1 style="font-size: 4em; color: #FF0000;">💀☠️💀</h1>
+            <h2 style="color: #FF0000;">HARD MODE GAME OVER!</h2>
+            <p>Du warst nicht stark genug für die brutale Herausforderung...</p>
+            <p>Zurück zum einfachen Quiz für Schwächlinge! 😈</p>
+            <button id="hard-game-over-restart-btn" class="brutal-game-over-button">Zurück zum Easy Mode... 😔</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="hard-mode-victory-page">
+        <div class="card brutal-victory-card pop-in">
+            <h1 style="font-size: 4em; color: #FFD700;">🔥👑🔥</h1>
+            <h2 style="color: #FFD700;">HARD MODE BEZWUNGEN!</h2>
+            <p>Du hast die brutalen Rätsel gemeistert!</p>
+            <p>Der Teufel persönlich neigt sein Haupt vor deiner Macht!</p>
+            <p>Du hast dir das Recht auf die finale Enthüllung verdient!</p>
+            <button id="hard-victory-continue-btn" class="brutal-victory-button">Zeige mir mein Geschenk! 👑</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="final-countdown-page">
+        <div class="card final-countdown-card bounce-in">
+            <h1 id="final-countdown-title">🎉 DAS GROSSE FINALE! 🎉</h1>
+            <div id="final-countdown-display" style="font-size: 8em; margin: 20px 0; text-shadow: 0 0 20px #FFD700;">10</div>
+            <p id="final-countdown-text">Bereite dich vor auf die ultimative Enthüllung!</p>
+        </div>
+    </div>
+
+    <div class="container hidden" id="mini-games-challenge-page">
+        <div class="card pop-in" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 3px solid #FFD700;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 4em; margin: 10px 0;">🎮👾🕹️</div>
+                <h2 style="color: #FFD700; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">⚡ ULTIMATIVE GAMING HERAUSFORDERUNG ⚡</h2>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                <p style="color: #FFF; font-weight: bold; font-size: 1.1em;">🎯 MISSIONS-BRIEFING:</p>
+                <p style="color: #FFF;">Zeit für den ultimativen Gaming-Showdown! Ich fordere dich zu einem epischen Dreikampf heraus!</p>
+            </div>
+            <div style="background: rgba(255,215,0,0.2); padding: 15px; border-radius: 10px; border: 2px solid #FFD700; margin: 15px 0;">
+                <p style="color: #FFD700; font-weight: bold; margin: 5px 0;">⚔️ HERAUSFORDERUNGS-REGELN:</p>
+                <ul style="text-align: left; margin: 10px 0; color: #FFF;">
+                    <li>🥇 <strong>GEWINNE ALLE 3 SPIELE HINTEREINANDER</strong> um zu triumphieren</li>
+                    <li>💀 <strong>VERLIERE AUCH NUR EINES</strong> und du fängst von vorne an</li>
+                    <li>🏆 <strong>NUR WAHRE CHAMPIONS</strong> erreichen das finale Geschenk</li>
+                </ul>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2em;">🎯</div>
+                    <div style="color: #FFF; font-size: 0.9em;">Spiel 1<br>Tic Tac Toe</div>
+                </div>
+                <div style="color: #FFD700; font-size: 1.5em;">→</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em;">✂️</div>
+                    <div style="color: #FFF; font-size: 0.9em;">Spiel 2<br>Schere-Stein-Papier</div>
+                </div>
+                <div style="color: #FFD700; font-size: 1.5em;">→</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em;">🧠</div>
+                    <div style="color: #FFF; font-size: 0.9em;">Spiel 3<br>Memory</div>
+                </div>
+                <div style="color: #FFD700; font-size: 1.5em;">→</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em;">👑</div>
+                    <div style="color: #FFD700; font-size: 0.9em;">SIEG!</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin: 20px 0;">
+                <p style="font-size: 1.2em; color: #FF6B6B; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
+                    🔥 HAST DU DAS ZEUG DAZU? 🔥
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="start-mini-games-btn" class="pulse-button" style="background: linear-gradient(45deg, #FF6B6B, #FF8E53); font-weight: bold; font-size: 1.1em;">🚀 LOS GEHT'S!</button>
+                <button id="mini-games-back-btn" class="pulse-button" style="background: #6c757d;">← Zurück</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="tic-tac-toe-game-page">
+        <div class="card pop-in">
+            <div style="position: relative;">
+                <h2>🎯 Spiel 1/3: Tic Tac Toe</h2>
+                <p>Du bist <strong style="color: #007bff;">X</strong>, ich bin <strong style="color: #dc3545;">O</strong></p>
+                <div id="tic-tac-toe-board" style="display: grid; grid-template-columns: repeat(3, 80px); grid-gap: 5px; justify-content: center; margin: 20px 0;">
+                    <button class="ttt-cell" data-index="0" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="1" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="2" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="3" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="4" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="5" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="6" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="7" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                    <button class="ttt-cell" data-index="8" style="width: 80px; height: 80px; font-size: 2em; background: #f8f9fa; border: 2px solid #333; cursor: pointer;"></button>
+                </div>
+                <p id="ttt-status" style="font-weight: bold; font-size: 1.1em;">Du bist dran!</p>
+                <div id="ttt-result" class="hidden" style="margin: 20px 0;">
+                    <p id="ttt-result-text" style="font-size: 1.2em; font-weight: bold;"></p>
+                    <button id="ttt-continue-btn" class="pulse-button hidden">Nächstes Spiel! 🎯</button>
+                    <button id="ttt-restart-challenge-btn" class="pulse-button hidden" style="background: #dc3545;">Challenge von vorne starten 😔</button>
+                </div>
+                <button id="ttt-give-up-btn" class="pulse-button" style="position: absolute; bottom: -10px; right: -10px; background: #6c757d; font-size: 0.8em; padding: 5px 10px;">Aufgeben</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="rock-paper-scissors-game-page">
+        <div class="card pop-in">
+            <h2>🎯 Spiel 2/3: Schere, Stein, Papier</h2>
+            <p>Best of 3 - wer 2 Runden gewinnt, gewinnt das Spiel!</p>
+            <div style="display: flex; justify-content: space-around; align-items: center; margin: 30px 0;">
+                <div style="text-align: center;">
+                    <h3>Du</h3>
+                    <div id="rps-player-choice" style="font-size: 4em; min-height: 80px;">❓</div>
+                    <div>Siege: <span id="rps-player-score">0</span></div>
+                </div>
+                <div style="font-size: 2em;">VS</div>
+                <div style="text-align: center;">
+                    <h3>Ich</h3>
+                    <div id="rps-computer-choice" style="font-size: 4em; min-height: 80px;">❓</div>
+                    <div>Siege: <span id="rps-computer-score">0</span></div>
+                </div>
+            </div>
+            <div id="rps-choices" style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;">
+                <button class="rps-choice-btn pulse-button" data-choice="rock" style="font-size: 2em; padding: 15px;">🪨 Stein</button>
+                <button class="rps-choice-btn pulse-button" data-choice="paper" style="font-size: 2em; padding: 15px;">📄 Papier</button>
+                <button class="rps-choice-btn pulse-button" data-choice="scissors" style="font-size: 2em; padding: 15px;">✂️ Schere</button>
+            </div>
+            <p id="rps-status" style="font-weight: bold; font-size: 1.1em;">Wähle deine Waffe!</p>
+            <div id="rps-result" class="hidden" style="margin: 20px 0;">
+                <p id="rps-result-text" style="font-size: 1.2em; font-weight: bold;"></p>
+                <button id="rps-continue-btn" class="pulse-button hidden">Letztes Spiel! 🎯</button>
+                <button id="rps-restart-challenge-btn" class="pulse-button hidden" style="background: #dc3545;">Challenge von vorne starten 😔</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="memory-match-game-page">
+        <div class="card pop-in">
+            <h2>🎯 Spiel 3/3: Memory Match</h2>
+            <p>Finde alle 6 Paare in maximal 15 Versuchen!</p>
+            <div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;">
+                <div>Versuche: <span id="memory-attempts">0</span>/15</div>
+                <div>Paare: <span id="memory-pairs">0</span>/6</div>
+            </div>
+            <div id="memory-board" style="display: grid; grid-template-columns: repeat(4, 80px); grid-gap: 10px; justify-content: center; margin: 20px 0;">
+                <!-- Memory cards will be generated by JavaScript -->
+            </div>
+            <p id="memory-status" style="font-weight: bold; font-size: 1.1em;">Klicke auf die Karten!</p>
+            <div id="memory-result" class="hidden" style="margin: 20px 0;">
+                <p id="memory-result-text" style="font-size: 1.2em; font-weight: bold;"></p>
+                <button id="memory-continue-btn" class="pulse-button hidden">🎉 Challenge geschafft!</button>
+                <button id="memory-restart-challenge-btn" class="pulse-button hidden" style="background: #dc3545;">Challenge von vorne starten 😔</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="mini-games-victory-page">
+        <div class="card pop-in">
+            <h2>🎉 ALLE MINI-GAMES BEZWUNGEN! 🎉</h2>
+            <p>Unglaublich! Du hast alle drei Spiele hintereinander gewonnen!</p>
+            <p>Du hast dir das große Finale mehr als verdient!</p>
+            <div style="font-size: 2em; margin: 20px 0;">🏆🎮🏆</div>
+            <p style="font-size: 1.1em; font-weight: bold; color: #28a745;">Zeit für die ultimative Enthüllung!</p>
+            <button id="mini-victory-final-countdown-btn" class="pulse-button">🚀 Zum großen Finale!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-disappointed-page">
+        <div class="card pop-in">
+            <h2>Wirklich? 😒</h2>
+            <p>Du willst einfach nur das Geheimnis lüften... Ohne Herausforderung, ohne Anstrengung, ohne dass du es dir verdienst?</p>
+            <p>Ich bin ehrlich gesagt ein bisschen enttäuscht von dir. 😔</p>
+            <p>Weißt du was? Ich denke, du warst nicht aufmerksam genug. Zeit für den finalen Countdown zur Enthüllung des Geschenks!</p>
+            <button id="disappointed-try-countdown-btn" class="pulse-button" style="background: #dc3545;">🚀 Okay, finaler Countdown!</button>
+            <button id="disappointed-convince-btn" class="pulse-button" style="background: #28a745;">🤔 Moment, lass mich dich überzeugen...</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-convince-attempt-page">
+        <div class="card pop-in">
+            <h2>Na gut, versuch's mal... 🙄</h2>
+            <p>Du willst mich überzeugen? Okay, ich höre zu...</p>
+            <p>Aber ich sage dir schon jetzt: Es wird nicht einfach sein, mich umzustimmen!</p>
+            <div style="margin: 20px 0;">
+                <p><strong>Deine Argumente:</strong></p>
+                <button id="convince-had-fun-btn" class="pulse-button" style="margin: 5px;">😊 Ich hatte schon genug Spaß!</button>
+                <button id="convince-worked-hard-btn" class="pulse-button" style="margin: 5px;">💪 Ich hab mir das verdient!</button>
+                <button id="convince-just-tired-btn" class="pulse-button" style="margin: 5px;">😴 Ich bin müde...</button>
+            </div>
+            <button id="convince-give-up-btn" class="pulse-button" style="background: #6c757d; margin-top: 15px;">😒 Vergiss es, finaler Countdown...</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="game-not-convinced-page">
+        <div class="card pop-in">
+            <h2 id="not-convinced-title">Hmm... 🤨</h2>
+            <p id="not-convinced-text">Das reicht mir nicht als Argument!</p>
+            <p>Zeit für den finalen Countdown! Vielleicht lernst du ja diesmal was dabei...</p>
+            <button id="not-convinced-countdown-btn" class="pulse-button" style="background: #dc3545;">🚀 Ab zum finalen Countdown!</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="difficulty-choice-page">
+        <div class="card pop-in">
+            <h2>Hmm... war das nicht zu einfach? 🤔</h2>
+            <p>Möchtest du eine schwierigere Herausforderung und dir das Geschenk wirklich verdienen?</p>
+            <button id="no-challenge-btn" class="pulse-button">Nein, danke!</button>
+            <button id="yes-challenge-btn" class="pulse-button">Ja, natürlich! Ich mag es brutal!</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
