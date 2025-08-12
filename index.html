@@ -11,8 +11,25 @@
     <div id="pm" style="position: fixed; top: 10px; left: 10px; background-color: rgba(0,0,0,0.5); color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8em; z-index: 9999;"></div>
     <div class="star-container"></div>
     <div class="confetti-container"></div>
+    
+    <!-- Birthday Background Visuals -->
+    <div class="birthday-visuals">
+        <div class="floating-balloon">🎈</div>
+        <div class="floating-balloon">🎈</div>
+        <div class="floating-balloon">🎈</div>
+        <div class="floating-balloon">🎈</div>
+        <div class="floating-star">⭐</div>
+        <div class="floating-star">✨</div>
+        <div class="floating-star">🌟</div>
+        <div class="floating-star">⭐</div>
+        <div class="floating-gift">🎁</div>
+        <div class="floating-gift">🎁</div>
+        <div class="floating-confetti">🎊</div>
+        <div class="floating-confetti">🎉</div>
+        <div class="floating-confetti">🎊</div>
+    </div>
 
-    <audio id="background-music" loop autoplay>
+    <audio id="background-music" loop>
         <!-- Replace 'your-music.mp3' with the actual path to your music file -->
         <source src="./assets/happy_birthday.mp3" type="audio/mpeg">
         Dein Browser unterstützt das Audio-Element nicht.
@@ -61,22 +78,30 @@
     </audio>
 
     <div class="container" id="landing-page">
-        <div class="card bounce-in">
-            <h1>🎉 Alles Gute zum Geburtstag! 🎉</h1>
-            <p>Bereit für eine Überraschung, die dich von den Socken haut? Dein Geschenk ist so geheim, dass selbst ich es kaum erwarten kann, es zu enthüllen!</p>
-            <p>Aber zuerst: Ein kleines Abenteuer wartet! Beantworte ein paar knifflige Fragen, und dein episches Geburtstagsgeschenk wird enthüllt!</p>
-            <button id="start-quiz-btn" class="pulse-button">Starte das Abenteuer!</button>
-            <button id="skip-quiz-btn" class="pulse-button" style="background-color: #6c757d; margin-top: 10px;">Quiz überspringen (Debug)</button>
-            <button id="skip-to-countdown-error-btn" class="pulse-button" style="background-color: #dc3545; margin-top: 10px;">Skip zu Countdown Error (Debug)</button>
-            <button id="skip-to-countdown2-btn" class="pulse-button" style="background-color: #17a2b8; margin-top: 10px;">Skip zu Countdown 2 (Debug)</button>
-            <button id="skip-to-relief-btn" class="pulse-button" style="background-color: #28a745; margin-top: 10px;">Skip zu Relief (Debug)</button>
-            <button id="skip-to-game-suggestions-btn" class="pulse-button" style="background-color: #ffc107; margin-top: 10px;">Skip zu Game Suggestions (Debug)</button>
-            <button id="skip-to-hard-victory-btn" class="pulse-button" style="background-color: #FFD700; margin-top: 10px;">Skip zu Hard Mode Victory (Debug)</button>
+        <div class="card bounce-in birthday-celebration">
+            <h1>🎂✨ HAPPY BIRTHDAY, WIFEY! ✨🎂</h1>
+            <div class="birthday-icons">🎉🎈🎁🎊🍰🎵</div>
+            <p class="celebration-text">🌟 Es ist dein großer Tag! 🌟</p>
+            <p>Bereit für die ultimative Geburtstags-Überraschung? Dein Geschenk ist so spektakulär, dass es ein ganzes Abenteuer verdient hat!</p>
+            <p class="excitement-text">🎮 Löse knifflige Rätsel, meistere Herausforderungen und entdecke dein episches Geburtstagsgeschenk! 🏆</p>
+            <button id="start-quiz-btn" class="pulse-button birthday-button">🚀 Starte das Geburtstags-Abenteuer! 🚀</button>
+        </div>
+        
+        <!-- Debug buttons positioned outside the main card -->
+        <div class="debug-panel">
+            <button id="skip-quiz-btn" class="debug-button">Quiz skip</button>
+            <button id="skip-to-system-dialogue-btn" class="debug-button">System Dialog</button>
+            <button id="skip-to-countdown2-btn" class="debug-button">Countdown 2</button>
+            <button id="skip-to-countdown2-error-btn" class="debug-button">Count Error</button>
+            <button id="skip-to-relief-btn" class="debug-button">Relief</button>
+            <button id="skip-to-game-suggestions-btn" class="debug-button">Game Suggest</button>
+            <button id="skip-to-hard-victory-btn" class="debug-button">Hard Victory</button>
         </div>
     </div>
 
     <div class="container hidden" id="quiz-page">
-        <div class="card slide-in">
+        <div class="card slide-in birthday-quiz">
+            <div class="quiz-header">🧩 Geburtstags-Rätsel 🧩</div>
             <h2 id="question-text"></h2>
             <div class="options" id="options-container">
                 <!-- Quiz-Optionen werden hier per JavaScript geladen -->
@@ -154,7 +179,7 @@
             <img src="./assets/king_gizzard.gif" alt="King Gizzard GIF" class="reveal-gif">
             <h2>🎊✨ Du hast es geschafft! Herzlichen Glückwunsch! ✨🎊</h2>
             <div class="hint-box">
-                <p>🎵🦎 King Gizzard and the Lizard Wizard spielen ihre einzige Orchester-Show auf der Euroa Tour in Holland! 🇳🇱</p>
+                <p>🎵🦎 King Gizzard and the Lizard Wizard spielen ihre einzige Orchester-Show auf der Europa Tour in Holland! 🇳🇱</p>
                 <p>🎟️💫 Und das allerbeste, du und ich sind am 7. November 2025 dabei! 🗓️</p>
                 <p>🚀🎊 Mach dich bereit für ein unvergessliches Konzert! 🌟💖</p>
             </div>
@@ -226,11 +251,8 @@
             <div id="gold-shop" class="hidden" style="margin: 15px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
                 <h4 style="color: #FFD700; margin: 0 0 10px 0;">⭐ Sterne Shop - Schneller zu 0!</h4>
                 <button id="buy-skip-50" class="pulse-button" style="background: #dc3545; margin: 5px; font-size: 0.9em;">⚡ -50 Sekunden (80 Sterne)</button>
-                <button id="buy-time-100" class="pulse-button" style="background: #17a2b8; margin: 5px; font-size: 0.9em;">⏳ +100 Sekunden (50 Sterne)</button>
                 <button id="buy-skip-100" class="pulse-button" style="background: #fd7e14; margin: 5px; font-size: 0.9em;">⚡ -100 Sekunden (150 Sterne)</button>
-                <button id="buy-time-300" class="pulse-button" style="background: #007bff; margin: 5px; font-size: 0.9em;">⏳ +300 Sekunden (120 Sterne)</button>
                 <button id="buy-skip-200" class="pulse-button" style="background: #6f42c1; margin: 5px; font-size: 0.9em;">⚡ -200 Sekunden (250 Sterne)</button>
-                <button id="buy-slow-mode" class="pulse-button" style="background: #6c757d; margin: 5px; font-size: 0.9em;">🐌 Slow Mode (200 Sterne)</button>
                 <button id="buy-turbo" class="pulse-button" style="background: #28a745; margin: 5px; font-size: 0.9em;">🚀 Turbo Mode (300 Sterne)</button>
             </div>
             
@@ -275,7 +297,7 @@
     <div class="container hidden" id="relief-page">
         <div class="card pop-in">
             <h2>Puh! Das System hat sich endlich beruhigt! 😅</h2>
-            <p>Was für ein Chaos... erst der Countdown-Wahnsinn, dann dieser kritische Systemfehler! Zum Glück läuft jetzt alles wieder normal.</p>
+            <p>Was für ein Chaos... ich hatte wohl ausversehen den fehlerhaften 1000er Countdown geladen.... tut mir Leid...! Zum Glück läuft jetzt alles wieder normal.</p>
             <p>Lass uns erstmal durchatmen...</p>
             <button id="start-breathing-btn" class="pulse-button">Starte die Atemübung</button>
             <div id="breathing-exercise" class="hidden" style="font-size: 1.5em; margin: 20px 0; color: #228B22;">
@@ -476,7 +498,7 @@
                     <button id="ttt-continue-btn" class="pulse-button hidden">Nächstes Spiel! 🎯</button>
                     <button id="ttt-restart-challenge-btn" class="pulse-button hidden" style="background: #dc3545;">Challenge von vorne starten 😔</button>
                 </div>
-                <button id="ttt-give-up-btn" class="pulse-button" style="position: absolute; bottom: -10px; right: -10px; background: #6c757d; font-size: 0.8em; padding: 5px 10px;">Aufgeben</button>
+                <button id="ttt-give-up-btn" class="give-up-button">Aufgeben</button>
             </div>
         </div>
     </div>
@@ -548,7 +570,7 @@
             <h2>Wirklich? 😒</h2>
             <p>Du willst einfach nur das Geheimnis lüften... Ohne Herausforderung, ohne Anstrengung, ohne dass du es dir verdienst?</p>
             <p>Ich bin ehrlich gesagt ein bisschen enttäuscht von dir. 😔</p>
-            <p>Weißt du was? Ich denke, du warst nicht aufmerksam genug. Zeit für den finalen Countdown zur Enthüllung des Geschenks!</p>
+            <p>Schade aber ok dann wird es Zeit für den finalen Countdown zur Enthüllung des Geschenks!</p>
             <button id="disappointed-try-countdown-btn" class="pulse-button" style="background: #dc3545;">🚀 Okay, finaler Countdown!</button>
             <button id="disappointed-convince-btn" class="pulse-button" style="background: #28a745;">🤔 Moment, lass mich dich überzeugen...</button>
         </div>
@@ -573,8 +595,8 @@
         <div class="card pop-in">
             <h2 id="not-convinced-title">Hmm... 🤨</h2>
             <p id="not-convinced-text">Das reicht mir nicht als Argument!</p>
-            <p>Zeit für den finalen Countdown! Vielleicht lernst du ja diesmal was dabei...</p>
-            <button id="not-convinced-countdown-btn" class="pulse-button" style="background: #dc3545;">🚀 Ab zum finalen Countdown!</button>
+            <p>Aber wenn du nicht willst... nagut... ab zum finalen Countdown......</p>
+            <button id="not-convinced-countdown-btn" class="pulse-button" style="background: #dc3545;">🚀 Yeah finalen Countdown!</button>
         </div>
     </div>
 
