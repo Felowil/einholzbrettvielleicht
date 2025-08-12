@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'rock-paper-scissors-game-page': document.getElementById('rock-paper-scissors-game-page'),
         'memory-match-game-page': document.getElementById('memory-match-game-page'),
         'mini-games-victory-page': document.getElementById('mini-games-victory-page'),
+        'give-up-confirmation-page': document.getElementById('give-up-confirmation-page'),
         'game-disappointed-page': document.getElementById('game-disappointed-page'),
         'game-convince-attempt-page': document.getElementById('game-convince-attempt-page'),
         'game-not-convinced-page': document.getElementById('game-not-convinced-page'),
@@ -91,9 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const buySkip100 = document.getElementById('buy-skip-100');
     const buySkip200 = document.getElementById('buy-skip-200');
     const buyTurbo = document.getElementById('buy-turbo');
-    const buyTime100 = document.getElementById('buy-time-100');
-    const buyTime300 = document.getElementById('buy-time-300');
-    const buySlowMode = document.getElementById('buy-slow-mode');
 
     // State
     let currentQuestionIndex = 0;
@@ -107,36 +105,32 @@ document.addEventListener('DOMContentLoaded', () => {
     let starsInterval;
     let countdown2StartTime = 0;
     let starsEarningEnabled = true;
+    let countdownStarted = false; // Track if countdown has started to hide birthday visuals
     
     // Mini-game state
     let miniGameActive = false;
+    let currentGameStep = 'tic-tac-toe-game'; // Track which game we're currently in
     let clickChallengeInterval;
     let mathChallengeInterval;
     let clickChallengeClicks = 0;
     let miniGameCooldown = false;
     let miniGamesPlayed = 0; // Track how many games played
-    let maxMiniGames = 3; // Maximum number of mini-games allowed
+    let maxMiniGames = 10; // Maximum number of mini-games allowed (increased)
     let playedGameTypes = []; // Track which game types have been played
     let turboModeActive = false; // Turbo mode makes countdown go faster
     
     // Shop pricing state - increases after each purchase
     let shopPrices = {
-        skip50: 150,  // Increased from 80
-        skip100: 300,  // Increased from 150
-        skip200: 500,  // Increased from 250
-        turbo: 600,   // Increased from 300
-        time100: 200,  // Increased from 50 (much more expensive to add time)
-        time300: 450,  // Increased from 120
-        slowMode: 400  // Increased from 200
+        skip50: 300,  // More expensive
+        skip100: 600,  // More expensive
+        skip200: 1000,  // More expensive
+        turbo: 800,   // More expensive
     };
     let shopPurchaseCounts = {
         skip50: 0,
         skip100: 0,
         skip200: 0,
-        turbo: 0,
-        time100: 0,
-        time300: 0,
-        slowMode: 0
+        turbo: 0
     };
     let totalShopPurchases = 0;
     const maxShopPurchases = 3;
@@ -168,42 +162,23 @@ document.addEventListener('DOMContentLoaded', () => {
         'start': {
             page: 'landing-page',
             background: 'default', // gradient background
-            music: null, // keep music stopped on start
-            onLoad: null,
+            music: null, // no music on landing page
+            onLoad: () => manageBirthdayVisuals(),
             buttons: {
                 'start-quiz-btn': () => renderStep('quiz'),
                 'skip-quiz-btn': () => renderStep('idea-question'),
-                'skip-to-countdown-error-btn': () => {
-                    // Jump directly to countdown error sequence
+                'skip-to-system-dialogue-btn': () => {
+                    // Jump directly to system dialogue (after countdown ends)
                     renderStep('countdown');
-                    // Wait a bit then trigger the error part of countdown
+                    // Skip countdown and go straight to the new system dialogue
                     setTimeout(() => {
-                        const countdownDisplay = document.getElementById('countdown-display');
-                        countdownDisplay.textContent = 'ERROR 404';
-                        countdownDisplay.className = 'countdown-style-error';
-                        document.body.classList.remove('countdown-active');
-                        document.body.classList.add('error-active');
                         countdownMusic.pause();
-                        errorSound.play().catch(e => console.log('Error sound play prevented:', e));
-                        
-                        // Continue with the error sequence
-                        setTimeout(() => {
-                            countdownDisplay.textContent = 'SYSTEM FAILURE';
-                            setTimeout(() => {
-                                countdownDisplay.textContent = '...';
-                                setTimeout(() => {
-                                    countdownMusic.pause();
-                                    errorSound.pause();
-                                    document.body.classList.remove('error-active');
-                                    setTimeout(() => {
-                                        renderStep('countdown-retry');
-                                    }, 1000);
-                                }, 2000);
-                            }, 2000);
-                        }, 3000);
-                    }, 500);
+                        document.body.classList.remove('countdown-active');
+                        startSystemDialogue();
+                    }, 1000);
                 },
                 'skip-to-countdown2-btn': () => renderStep('countdown2'),
+                'skip-to-countdown2-error-btn': () => startFinalErrorSequence(),
                 'skip-to-relief-btn': () => renderStep('relief'),
                 'skip-to-game-suggestions-btn': () => renderStep('game-suggestions'),
                 'skip-to-hard-victory-btn': () => renderStep('hard-mode-victory')
@@ -212,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'quiz': {
             page: 'quiz-page',
             background: 'default',
-            music: 'happy-birthday', // play happy birthday music during quiz
+            music: 'happy-birthday', // start happy birthday music with quiz
             onLoad: () => {
                 questions = [...allQuestions];
                 shuffleArray(questions);
@@ -266,7 +241,12 @@ document.addEventListener('DOMContentLoaded', () => {
             page: 'countdown-page',
             background: 'black', // solid black background
             music: 'countdown', // play countdown music
-            onLoad: () => startCountdown()
+            onLoad: () => {
+                // Mark countdown as started and hide birthday visuals
+                countdownStarted = true;
+                manageBirthdayVisuals();
+                startCountdown();
+            }
         },
         'clue-reveal': {
             page: 'clue-reveal-page',
@@ -291,7 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
             music: null,
             onLoad: null,
             buttons: {
-                'restart-quiz-btn1': () => renderStep('quiz') // Restart quiz
+                'restart-quiz-btn1': () => {
+                    countdownStarted = false;
+                    manageBirthdayVisuals();
+                    renderStep('quiz');
+                } // Restart quiz
             }
         },
         'dead-end-second-thoughts': {
@@ -300,7 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
             music: null,
             onLoad: null,
             buttons: {
-                'restart-quiz-btn2': () => renderStep('quiz') // Restart quiz
+                'restart-quiz-btn2': () => {
+                    countdownStarted = false;
+                    manageBirthdayVisuals();
+                    renderStep('quiz');
+                } // Restart quiz
             }
         },
         'dead-end-final-doubt': {
@@ -309,7 +297,11 @@ document.addEventListener('DOMContentLoaded', () => {
             music: null,
             onLoad: null,
             buttons: {
-                'restart-quiz-btn3': () => renderStep('quiz') // Restart quiz
+                'restart-quiz-btn3': () => {
+                    countdownStarted = false;
+                    manageBirthdayVisuals();
+                    renderStep('quiz');
+                } // Restart quiz
             }
         },
         // New steps for different 'No' paths - now all lead to dead ends!
@@ -362,7 +354,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 10000);
             },
             buttons: {
-                'restart-game-btn': () => renderStep('start')
+                'restart-game-btn': () => {
+                    // Reset countdown state when restarting game
+                    countdownStarted = false;
+                    manageBirthdayVisuals();
+                    renderStep('start');
+                }
             }
         },
         'countdown2': {
@@ -493,7 +490,11 @@ document.addEventListener('DOMContentLoaded', () => {
             music: 'hardmode',
             onLoad: null,
             buttons: {
-                'hard-game-over-restart-btn': () => renderStep('quiz')
+                'hard-game-over-restart-btn': () => {
+                    countdownStarted = false;
+                    manageBirthdayVisuals();
+                    renderStep('quiz');
+                }
             }
         },
         'hard-mode-victory': {
@@ -514,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'mini-games-challenge': {
             page: 'mini-games-challenge-page', 
-            background: 'default',
+            background: 'gaming',
             music: 'game-suggestion',
             onLoad: () => initMiniGamesChallenge(),
             buttons: {
@@ -524,37 +525,34 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'tic-tac-toe-game': {
             page: 'tic-tac-toe-game-page',
-            background: 'default',
+            background: 'gaming',
             music: 'gaming',
-            onLoad: () => initTicTacToe(),
+            onLoad: () => {
+                currentGameStep = 'tic-tac-toe-game';
+                initTicTacToe();
+            },
             buttons: {
-                'ttt-give-up-btn': () => {
-                    const confirmGiveUp = confirm(
-                        '🤔 Bist du dir sicher?\n\n' +
-                        'Wenn du aufgibst, wirst du zurück zum allerersten Anfang geschickt!\n\n' +
-                        '💔 Du verlässt die Mini-Games Challenge komplett.\n\n' +
-                        'Wirklich aufgeben?'
-                    );
-                    
-                    if (confirmGiveUp) {
-                        gamingMusic.pause();
-                        renderStep('start');
-                    }
-                }
+                'ttt-give-up-btn': () => renderStep('give-up-confirmation')
             }
         },
         'rock-paper-scissors-game': {
             page: 'rock-paper-scissors-game-page',
-            background: 'default', 
+            background: 'gaming', 
             music: 'gaming',
-            onLoad: () => initRockPaperScissors(),
+            onLoad: () => {
+                currentGameStep = 'rock-paper-scissors-game';
+                initRockPaperScissors();
+            },
             buttons: {}
         },
         'memory-match-game': {
             page: 'memory-match-game-page',
-            background: 'default',
+            background: 'gaming',
             music: 'gaming', 
-            onLoad: () => initMemoryMatch(),
+            onLoad: () => {
+                currentGameStep = 'memory-match-game';
+                initMemoryMatch();
+            },
             buttons: {}
         },
         'mini-games-victory': {
@@ -564,6 +562,23 @@ document.addEventListener('DOMContentLoaded', () => {
             onLoad: null,
             buttons: {
                 'mini-victory-final-countdown-btn': () => renderStep('final-countdown')
+            }
+        },
+        'give-up-confirmation': {
+            page: 'give-up-confirmation-page',
+            background: 'gaming',
+            music: 'gaming',
+            onLoad: null,
+            buttons: {
+                'confirm-give-up-btn': () => {
+                    gamingMusic.pause();
+                    renderStep('start');
+                },
+                'cancel-give-up-btn': () => {
+                    // Go back to the current active game
+                    const currentGame = getCurrentGame();
+                    renderStep(currentGame);
+                }
             }
         },
         // Disappointed game dialog sequence
@@ -627,6 +642,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    function getCurrentGame() {
+        return currentGameStep;
+    }
+
     function renderStep(stepId) {
         console.log(`Rendering step: ${stepId}`);
         const step = gameSteps[stepId];
@@ -677,6 +696,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'final':
                 document.body.classList.add('final-reveal-active');
+                break;
+            case 'gaming':
+                document.body.classList.add('gaming-page');
                 break;
             case 'default':
             default:
@@ -930,24 +952,16 @@ document.addEventListener('DOMContentLoaded', () => {
             { display: '1/2', duration: 2500, className: 'countdown-style-fraction' },
             { display: '1/4', duration: 2500, className: 'countdown-style-fraction' },
             { display: '1/8', duration: 2500, className: 'countdown-style-fraction' },
-            { display: '1/16', duration: 2000, className: 'countdown-style-fraction' },
-            { display: '1/32', duration: 2000, className: 'countdown-style-fraction' },
-            { display: '1/64', duration: 1800, className: 'countdown-style-fraction' },
-            { display: '1/128', duration: 1800, className: 'countdown-style-fraction' },
             { display: '0,1', duration: 1500, className: 'countdown-style-fraction' },
             { display: '0,01', duration: 1500, className: 'countdown-style-fraction' },
             { display: '0,001', duration: 1500, className: 'countdown-style-fraction' },
             { display: 'fast da...', duration: 2000, className: 'countdown-style-interjection' },
-            { display: 'oh musik wieder anmachen....', duration: 2500, className: 'countdown-style-interjection' },
             { display: '0,0001', duration: 1200, className: 'countdown-style-fraction' },
             { display: 'SO NAH!', duration: 1500, className: 'countdown-style-interjection' },
             { display: '0,00001', duration: 1000, className: 'countdown-style-fraction' },
             { display: 'GLEICH!', duration: 1500, className: 'countdown-style-interjection' },
             { display: '...', duration: 3000, className: 'countdown-style-interjection' },
-            { display: '0', duration: 2000, className: 'countdown-style-0' },
-            { display: 'ERROR 404', duration: 3000, className: 'countdown-style-error' },
-            { display: 'SYSTEM FAILURE', duration: 2000, className: 'countdown-style-error' },
-            { display: '...', duration: 2000, className: 'countdown-style-error' }
+            { display: '0', duration: 2000, className: 'countdown-style-0' }
         ];
         
         let currentIndex = 0;
@@ -958,29 +972,161 @@ document.addEventListener('DOMContentLoaded', () => {
                 countdownDisplay.textContent = current.display;
                 countdownDisplay.className = current.className;
                 
-                // Check if we've reached the error messages
-                if (current.display === 'ERROR 404') {
-                    // Switch to red background and play error sound
-                    document.body.classList.remove('countdown-active');
-                    document.body.classList.add('error-active');
-                    countdownMusic.pause();
-                    errorSound.play().catch(e => console.log('Error sound play prevented:', e));
-                }
-                
                 currentIndex++;
                 countdownInterval = setTimeout(countdownStep, current.duration);
             } else {
-                // Stop all sounds and go to retry page
+                // Countdown finished - start the new system dialogue sequence
                 countdownMusic.pause();
-                errorSound.pause();
-                // Reset background for retry page
-                document.body.classList.remove('error-active');
-                setTimeout(() => {
-                    renderStep('countdown-retry');
-                }, 1000);
+                document.body.classList.remove('countdown-active');
+                startSystemDialogue();
             }
         };
         countdownStep();
+    }
+
+    // --- SYSTEM DIALOGUE AFTER COUNTDOWN ---
+    function startSystemDialogue() {
+        // Black screen for 5 seconds
+        document.body.classList.add('black-screen');
+        countdownDisplay.textContent = '';
+        countdownDisplay.className = '';
+        
+        setTimeout(() => {
+            // Start animated "Hallo..." text
+            showAnimatedHallo();
+        }, 5000);
+    }
+
+    function showAnimatedHallo() {
+        const fullText = 'Hallo...';
+        let currentChar = 0;
+        
+        countdownDisplay.className = 'system-dialogue-text';
+        countdownDisplay.textContent = '';
+        
+        // Reveal text character by character
+        const typeInterval = setInterval(() => {
+            if (currentChar < fullText.length) {
+                countdownDisplay.textContent = fullText.substring(0, currentChar + 1);
+                currentChar++;
+            } else {
+                clearInterval(typeInterval);
+                // Show button only after text is fully revealed
+                setTimeout(() => {
+                    showHalloButton();
+                }, 500);
+            }
+        }, 200); // 200ms per character
+    }
+
+    function showHalloButton() {
+        // Create and show the "Hallo" button
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'system-dialogue-button-container';
+        buttonContainer.innerHTML = '<button id="hallo-button" class="system-dialogue-button">hallo</button>';
+        
+        const countdownPage = document.getElementById('countdown-page');
+        countdownPage.appendChild(buttonContainer);
+        
+        // Add click handler
+        document.getElementById('hallo-button').addEventListener('click', () => {
+            // Remove button
+            buttonContainer.remove();
+            // Show second dialogue
+            showSecondDialogue();
+        });
+    }
+
+    function showSecondDialogue() {
+        // Game responds after button click - reveal text character by character
+        const texts = [
+            'Oh, du bist noch da...',
+            'Ich glaube der Countdown ist kaputt gegangen.',
+            'Möchtest du den Countdown neu starten?'
+        ];
+        
+        let currentTextIndex = 0;
+        
+        function showNextText() {
+            if (currentTextIndex < texts.length) {
+                const fullText = texts[currentTextIndex];
+                let currentChar = 0;
+                countdownDisplay.textContent = '';
+                
+                const typeInterval = setInterval(() => {
+                    if (currentChar < fullText.length) {
+                        countdownDisplay.textContent = fullText.substring(0, currentChar + 1);
+                        currentChar++;
+                    } else {
+                        clearInterval(typeInterval);
+                        currentTextIndex++;
+                        
+                        if (currentTextIndex < texts.length) {
+                            // Pause before next text
+                            setTimeout(() => {
+                                showNextText();
+                            }, 2000);
+                        } else {
+                            // All text shown, now show buttons after a pause
+                            setTimeout(() => {
+                                showRestartButtons();
+                            }, 1500);
+                        }
+                    }
+                }, 100); // 100ms per character (faster than first text)
+            }
+        }
+        
+        showNextText();
+    }
+
+    function showRestartButtons() {
+        // Create restart option buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'system-dialogue-button-container';
+        buttonContainer.innerHTML = `
+            <button id="restart-ok-button" class="system-dialogue-button">eh ja klar...</button>
+            <button id="no-more-button" class="system-dialogue-button">och ne...</button>
+        `;
+        
+        const countdownPage = document.getElementById('countdown-page');
+        countdownPage.appendChild(buttonContainer);
+        
+        // Add click handlers
+        document.getElementById('restart-ok-button').addEventListener('click', () => {
+            buttonContainer.remove();
+            showLoadingText();
+        });
+        
+        document.getElementById('no-more-button').addEventListener('click', () => {
+            buttonContainer.remove();
+            document.body.classList.remove('black-screen');
+            renderStep('game-over');
+        });
+    }
+
+    function showLoadingText() {
+        const fullText = 'Okay! Großer Countdown wird geladen...';
+        let currentChar = 0;
+        countdownDisplay.textContent = '';
+        
+        // Reveal text character by character
+        const typeInterval = setInterval(() => {
+            if (currentChar < fullText.length) {
+                countdownDisplay.textContent = fullText.substring(0, currentChar + 1);
+                currentChar++;
+            } else {
+                clearInterval(typeInterval);
+                // Wait a bit after text is complete, then proceed
+                setTimeout(() => {
+                    // Clean up and go to second countdown
+                    document.body.classList.remove('black-screen');
+                    countdownDisplay.textContent = '';
+                    countdownDisplay.className = '';
+                    renderStep('countdown2');
+                }, 1500);
+            }
+        }, 80); // 80ms per character (faster loading text)
     }
 
     // --- SECOND COUNTDOWN LOGIC WITH GOLD SYSTEM ---
@@ -1073,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCountdown2Display();
             
             // Randomly trigger mini-games (from when stars counter is visible, max 3 times)
-            if (!miniGameActive && !miniGameCooldown && !starsDisplay.classList.contains('hidden') && miniGamesPlayed < maxMiniGames && Math.random() < 0.02) {
+            if (!miniGameActive && !miniGameCooldown && !starsDisplay.classList.contains('hidden') && miniGamesPlayed < maxMiniGames && Math.random() < 0.08) {
                 triggerRandomMiniGame();
             }
             
@@ -1163,7 +1309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bonusMsg.textContent = message;
         bonusMsg.style.cssText = `
             position: fixed;
-            top: 50%;
+            top: 10%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: linear-gradient(45deg, #FFD700, #FFA500);
@@ -1343,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { display: 'SYSTEM OVERLOAD', duration: 2000, className: 'countdown-style-error' },
             { display: 'CRITICAL ERROR', duration: 2000, className: 'countdown-style-error' },
             { display: 'MELTDOWN IMMINENT', duration: 2000, className: 'countdown-style-error' },
-            { display: '...REBOOTING...', duration: 1000, className: 'countdown-style-error', showProgress: true }
+            { display: '', duration: 500, className: 'countdown-style-error', showProgress: true }
         ];
         
         let currentIndex = 0;
@@ -1379,9 +1525,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- REBOOT PROGRESS BAR ---
     function startRebootProgress() {
-        // Hide countdown display and show progress bar
+        // Hide countdown display and show progress bar with black background
         countdown2Display.classList.add('hidden');
         rebootProgressContainer.classList.remove('hidden');
+        
+        // Set black background for the reload progress
+        document.body.style.backgroundColor = 'black !important';
+        document.body.style.background = 'black !important';
+        const countdown2Page = document.getElementById('countdown2-page');
+        if (countdown2Page) {
+            countdown2Page.style.backgroundColor = 'black !important';
+            countdown2Page.style.background = 'black !important';
+        }
+        const countdownCard = document.querySelector('#countdown2-page .card');
+        if (countdownCard) {
+            countdownCard.style.backgroundColor = 'black !important';
+            countdownCard.style.background = 'black !important';
+            countdownCard.style.border = 'none';
+            countdownCard.style.boxShadow = 'none';
+        }
+        // Also ensure container has black background
+        const container = document.querySelector('#countdown2-page .container');
+        if (container) {
+            container.style.backgroundColor = 'black !important';
+            container.style.background = 'black !important';
+        }
         
         let progress = 0;
         const progressMessages = [
@@ -1394,24 +1562,31 @@ document.addEventListener('DOMContentLoaded', () => {
             'System restored successfully!'
         ];
         
+        // Set initial message immediately
+        rebootProgressText.textContent = progressMessages[0];
+        
         const progressInterval = setInterval(() => {
             progress += Math.random() * 15 + 5; // Random progress between 5-20%
             
             if (progress >= 100) {
                 progress = 100;
                 rebootProgressFill.style.width = '100%';
-                rebootProgressText.textContent = progressMessages[progressMessages.length - 1];
+                rebootProgressText.style.display = 'none'; // Hide text immediately
                 
                 clearInterval(progressInterval);
                 
-                // After completion, go to relief page
+                // After completion, show black screen then go to relief page
                 setTimeout(() => {
                     errorSound.pause();
                     document.body.classList.remove('error-active');
                     rebootProgressContainer.classList.add('hidden');
                     countdown2Display.classList.remove('hidden');
-                    renderStep('relief');
-                }, 2000);
+                    
+                    // Keep black screen for 2 seconds before showing relief page
+                    setTimeout(() => {
+                        renderStep('relief');
+                    }, 2000);
+                }, 1000); // Reduced initial timeout to 1 second, then 2 seconds black screen
             } else {
                 rebootProgressFill.style.width = progress + '%';
                 // Update message based on progress
@@ -1433,6 +1608,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!playedGameTypes.includes('math')) {
             availableGames.push('math');
         }
+        if (!playedGameTypes.includes('color')) {
+            availableGames.push('color');
+        }
+        if (!playedGameTypes.includes('reaction')) {
+            availableGames.push('reaction');
+        }
+        if (!playedGameTypes.includes('word')) {
+            availableGames.push('word');
+        }
         
         // If no games available, don't start any
         if (availableGames.length === 0) {
@@ -1445,8 +1629,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (gameType === 'click') {
             startClickChallenge();
-        } else {
+        } else if (gameType === 'math') {
             startMathChallenge();
+        } else if (gameType === 'color') {
+            startColorChallenge();
+        } else if (gameType === 'reaction') {
+            startReactionChallenge();
+        } else if (gameType === 'word') {
+            startWordChallenge();
         }
     }
     
@@ -1572,13 +1762,253 @@ document.addEventListener('DOMContentLoaded', () => {
         miniGameActive = false;
         startMiniGameCooldown();
     }
+
+    // --- NEW MINI GAMES ---
+    
+    function startColorChallenge() {
+        miniGameActive = true;
+        let timeLeft = 10;
+        
+        const colors = ['rot', 'blau', 'grün', 'gelb'];
+        const displayColors = ['red', 'blue', 'green', 'yellow'];
+        
+        // Pick random color word and display color (make sure they're different)
+        const correctColorWord = colors[Math.floor(Math.random() * colors.length)];
+        const correctWordIndex = colors.indexOf(correctColorWord);
+        
+        // Pick a different color to display the word in
+        let displayColorIndex;
+        do {
+            displayColorIndex = Math.floor(Math.random() * displayColors.length);
+        } while (displayColorIndex === correctWordIndex);
+        
+        const displayColor = displayColors[displayColorIndex];
+        const correctAnswer = displayColor; // The answer is the actual color shown, not what the word says
+        
+        // Show color challenge
+        showStarsBonus('Welche FARBE hat der Text?');
+        
+        // Add instruction
+        const instructionDiv = document.createElement('div');
+        instructionDiv.style.fontSize = '1.2em';
+        instructionDiv.style.color = 'white';
+        instructionDiv.style.textAlign = 'center';
+        instructionDiv.style.margin = '10px 0';
+        instructionDiv.textContent = 'Ignoriere das Wort! Welche Farbe siehst du?';
+        
+        const colorText = document.createElement('div');
+        colorText.style.fontSize = '3em';
+        colorText.style.color = displayColor;
+        colorText.style.fontWeight = 'bold';
+        colorText.textContent = correctColorWord;
+        colorText.style.textAlign = 'center';
+        colorText.style.margin = '20px 0';
+        colorText.style.border = '3px solid white';
+        colorText.style.padding = '20px';
+        colorText.style.borderRadius = '10px';
+        
+        const countdown2Page = document.getElementById('countdown2-page');
+        countdown2Page.appendChild(instructionDiv);
+        countdown2Page.appendChild(colorText);
+        
+        // Add answer buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.textAlign = 'center';
+        buttonContainer.innerHTML = `
+            <button class="color-answer" data-color="red" style="background: red; color: white; margin: 5px; padding: 10px 15px; font-size: 1.2em;">ROT</button>
+            <button class="color-answer" data-color="blue" style="background: blue; color: white; margin: 5px; padding: 10px 15px; font-size: 1.2em;">BLAU</button>
+            <button class="color-answer" data-color="green" style="background: green; color: white; margin: 5px; padding: 10px 15px; font-size: 1.2em;">GRÜN</button>
+            <button class="color-answer" data-color="yellow" style="background: yellow; color: black; margin: 5px; padding: 10px 15px; font-size: 1.2em;">GELB</button>
+        `;
+        countdown2Page.appendChild(buttonContainer);
+        
+        // Add click handlers
+        document.querySelectorAll('.color-answer').forEach(btn => {
+            btn.onclick = () => {
+                if (btn.dataset.color === correctAnswer) {
+                    playerStars += 20;
+                    updateStarsDisplay();
+                    showStarsBonus('+20 Sterne! Farben-Experte! 🌈');
+                } else {
+                    countdown2Value += 50;
+                    updateCountdown2Display();
+                    showStarsBonus('Falsch! +50 Sekunden! 🎨');
+                }
+                endColorChallenge();
+            };
+        });
+        
+        // Timer
+        const colorInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                countdown2Value += 40;
+                updateCountdown2Display();
+                showStarsBonus('Zeit abgelaufen! +40 Sekunden! ⏰');
+                endColorChallenge();
+            }
+        }, 1000);
+        
+        function endColorChallenge() {
+            clearInterval(colorInterval);
+            instructionDiv.remove();
+            colorText.remove();
+            buttonContainer.remove();
+            miniGameActive = false;
+            startMiniGameCooldown();
+        }
+    }
+    
+    function startReactionChallenge() {
+        miniGameActive = true;
+        let hasClicked = false;
+        
+        showStarsBonus('Warte auf das grüne Signal!');
+        
+        const reactionContainer = document.createElement('div');
+        reactionContainer.style.textAlign = 'center';
+        reactionContainer.style.margin = '20px 0';
+        
+        const signalDiv = document.createElement('div');
+        signalDiv.style.fontSize = '3em';
+        signalDiv.style.fontWeight = 'bold';
+        signalDiv.style.padding = '40px';
+        signalDiv.style.margin = '20px auto';
+        signalDiv.style.width = '200px';
+        signalDiv.style.height = '100px';
+        signalDiv.style.borderRadius = '15px';
+        signalDiv.style.cursor = 'pointer';
+        signalDiv.style.backgroundColor = '#ff4444';
+        signalDiv.style.color = 'white';
+        signalDiv.textContent = 'WARTEN';
+        
+        reactionContainer.appendChild(signalDiv);
+        
+        const countdown2Page = document.getElementById('countdown2-page');
+        countdown2Page.appendChild(reactionContainer);
+        
+        // Random delay between 2-5 seconds
+        const delay = Math.random() * 3000 + 2000;
+        let startTime;
+        
+        // Too early click handler
+        signalDiv.onclick = () => {
+            if (!hasClicked && signalDiv.style.backgroundColor === 'rgb(255, 68, 68)') {
+                hasClicked = true;
+                countdown2Value += 40;
+                updateCountdown2Display();
+                showStarsBonus('Zu früh! +40 Sekunden! ⚡');
+                endReactionChallenge();
+            } else if (signalDiv.style.backgroundColor === 'rgb(68, 255, 68)' && !hasClicked) {
+                hasClicked = true;
+                const reactionTime = Date.now() - startTime;
+                if (reactionTime < 500) {
+                    playerStars += 25;
+                    updateStarsDisplay();
+                    showStarsBonus(`+25 Sterne! Blitzschnell! ${reactionTime}ms ⚡`);
+                } else {
+                    playerStars += 15;
+                    updateStarsDisplay();
+                    showStarsBonus(`+15 Sterne! Reaktionszeit: ${reactionTime}ms ⚡`);
+                }
+                endReactionChallenge();
+            }
+        };
+        
+        setTimeout(() => {
+            if (!hasClicked) {
+                signalDiv.style.backgroundColor = '#44ff44';
+                signalDiv.textContent = 'KLICK!';
+                startTime = Date.now();
+                
+                // Timeout after 2 seconds
+                setTimeout(() => {
+                    if (!hasClicked) {
+                        hasClicked = true;
+                        countdown2Value += 30;
+                        updateCountdown2Display();
+                        showStarsBonus('Zu langsam! +30 Sekunden! 🐌');
+                        endReactionChallenge();
+                    }
+                }, 2000);
+            }
+        }, delay);
+        
+        function endReactionChallenge() {
+            reactionContainer.remove();
+            miniGameActive = false;
+            startMiniGameCooldown();
+        }
+    }
+    
+    function startWordChallenge() {
+        miniGameActive = true;
+        let timeLeft = 15;
+        
+        const words = ['GEBURTSTAG', 'GESCHENK', 'PARTY', 'KUCHEN', 'FEIER', 'ÜBERRASCHUNG'];
+        const word = words[Math.floor(Math.random() * words.length)];
+        
+        // Scramble the word
+        const scrambled = word.split('').sort(() => Math.random() - 0.5).join('');
+        
+        showStarsBonus('Sortiere die Buchstaben!');
+        
+        const wordContainer = document.createElement('div');
+        wordContainer.style.textAlign = 'center';
+        wordContainer.style.margin = '20px 0';
+        wordContainer.innerHTML = `
+            <div style="font-size: 2em; color: #FFD700; margin: 10px;">${scrambled}</div>
+            <input type="text" id="word-input" placeholder="Deine Antwort..." style="font-size: 1.2em; padding: 10px; width: 200px;">
+            <br>
+            <button id="word-submit" style="margin-top: 10px; padding: 10px 20px; font-size: 1.2em;">Bestätigen</button>
+        `;
+        
+        const countdown2Page = document.getElementById('countdown2-page');
+        countdown2Page.appendChild(wordContainer);
+        
+        document.getElementById('word-submit').onclick = checkWord;
+        document.getElementById('word-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkWord();
+        });
+        
+        const wordInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                countdown2Value += 80;
+                updateCountdown2Display();
+                showStarsBonus('Zeit abgelaufen! +80 Sekunden! ⏰');
+                endWordChallenge();
+            }
+        }, 1000);
+        
+        function checkWord() {
+            const userWord = document.getElementById('word-input').value.toUpperCase();
+            if (userWord === word) {
+                playerStars += 35;
+                updateStarsDisplay();
+                showStarsBonus('+35 Sterne! Wort-Meister! 📝');
+            } else {
+                countdown2Value += 70;
+                updateCountdown2Display();
+                showStarsBonus(`Falsch! Das Wort war: ${word}. +70 Sekunden! 📚`);
+            }
+            endWordChallenge();
+        }
+        
+        function endWordChallenge() {
+            clearInterval(wordInterval);
+            wordContainer.remove();
+            miniGameActive = false;
+            startMiniGameCooldown();
+        }
+    }
     
     function startMiniGameCooldown() {
         miniGameCooldown = true;
-        // 30-60 second cooldown between mini-games
+        // 10-20 second cooldown between mini-games (more frequent)
         setTimeout(() => {
             miniGameCooldown = false;
-        }, Math.random() * 30000 + 30000);
+        }, Math.random() * 10000 + 10000);
     }
 
     // --- GOLD SHOP ---
@@ -1587,9 +2017,6 @@ document.addEventListener('DOMContentLoaded', () => {
         buySkip100.onclick = () => buySkip(100, 'skip100');
         buySkip200.onclick = () => buySkip(200, 'skip200');
         buyTurbo.onclick = () => buyTurboMode();
-        buyTime100.onclick = () => buyTime(100, 'time100');
-        buyTime300.onclick = () => buyTime(300, 'time300');
-        buySlowMode.onclick = () => handleBuySlowMode();
         updateShopButtons();
     }
     
@@ -1612,10 +2039,10 @@ document.addEventListener('DOMContentLoaded', () => {
             shopPurchaseCounts[priceKey]++;
             shopPrices[priceKey] = Math.floor(shopPrices[priceKey] * 1.5); // 50% price increase
             
-            showStarsBonus(`⚡ -${seconds} Sekunden! Schneller zu 0! (${totalShopPurchases}/${maxShopPurchases})`);
+            showStarsBonus(`⚡ -${seconds} Sekunden! (${totalShopPurchases}/${maxShopPurchases})`);
             updateShopButtons();
         } else {
-            showStarsBonus('Nicht genug Sterne! ⭐');
+            showStarsBonus('Nicht genug Sterne! 💰');
         }
     }
     
@@ -1641,7 +2068,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (turboModeActive) {
             showStarsBonus('Turbo Mode bereits aktiv! 🚀');
         } else {
-            showStarsBonus('Nicht genug Sterne! ⭐');
+            showStarsBonus('Nicht genug Sterne! 💰');
         }
     }
     
@@ -1649,43 +2076,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const purchaseLimitReached = totalShopPurchases >= maxShopPurchases;
         
         // Update button text with current prices
-        buySkip50.textContent = `⚡ -50 Sekunden (${shopPrices.skip50} Gold)`;
-        buySkip100.textContent = `⚡ -100 Sekunden (${shopPrices.skip100} Gold)`;
-        buySkip200.textContent = `⚡ -200 Sekunden (${shopPrices.skip200} Gold)`;
-        buyTime100.textContent = `⏳ +100 Sekunden (${shopPrices.time100} Gold)`;
-        buyTime300.textContent = `⏳ +300 Sekunden (${shopPrices.time300} Gold)`;
-        
+        buySkip50.textContent = `⚡ -50 Sekunden (${shopPrices.skip50} Sterne)`;
+        buySkip100.textContent = `⚡ -100 Sekunden (${shopPrices.skip100} Sterne)`;
+        buySkip200.textContent = `⚡ -200 Sekunden (${shopPrices.skip200} Sterne)`;
         // Update button availability (either not enough gold OR purchase limit reached)
         buySkip50.disabled = playerStars < shopPrices.skip50 || purchaseLimitReached;
         buySkip100.disabled = playerStars < shopPrices.skip100 || purchaseLimitReached;
         buySkip200.disabled = playerStars < shopPrices.skip200 || purchaseLimitReached;
-        buyTime100.disabled = playerStars < shopPrices.time100 || purchaseLimitReached;
-        buyTime300.disabled = playerStars < shopPrices.time300 || purchaseLimitReached;
         
         updateTurboButton();
-        updateSlowModeButton();
         
         // Show purchase counter in shop header
         if (starsShop && !starsShop.classList.contains('hidden')) {
             const shopTitle = starsShop.querySelector('h4');
             if (shopTitle) {
-                shopTitle.textContent = `⭐ Sterne Shop - Schneller zu 0! (${totalShopPurchases}/${maxShopPurchases})`;
+                shopTitle.textContent = `⭐ Sterne Shop (${totalShopPurchases}/${maxShopPurchases})`;
             }
         }
     }
     
-    function updateSlowModeButton() {
-        const purchaseLimitReached = totalShopPurchases >= maxShopPurchases;
-        if (slowModeActive) {
-            buySlowMode.disabled = true;
-            buySlowMode.textContent = '🐌 Slow Mode aktiv';
-            buySlowMode.style.background = '#6c757d';
-        } else {
-            buySlowMode.disabled = playerStars < shopPrices.slowMode || purchaseLimitReached;
-            buySlowMode.textContent = `🐌 Slow Mode (${shopPrices.slowMode} Gold)`;
-            buySlowMode.style.background = '#6c757d';
-        }
-    }
     
     function updateTurboButton() {
         const purchaseLimitReached = totalShopPurchases >= maxShopPurchases;
@@ -1695,60 +2104,12 @@ document.addEventListener('DOMContentLoaded', () => {
             buyTurbo.style.background = '#6c757d';
         } else {
             buyTurbo.disabled = playerStars < shopPrices.turbo || purchaseLimitReached;
-            buyTurbo.textContent = `🚀 Turbo Mode (${shopPrices.turbo} Gold)`;
+            buyTurbo.textContent = `🚀 Turbo Mode (${shopPrices.turbo} Sterne)`;
             buyTurbo.style.background = '#28a745';
         }
     }
     
-    function buyTime(seconds, priceKey) {
-        const cost = shopPrices[priceKey];
-        if (totalShopPurchases >= maxShopPurchases) {
-            showStarsBonus('Maximale Anzahl Einkäufe erreicht! (3/3)');
-            return;
-        }
-        if (playerStars >= cost) {
-            playerStars -= cost;
-            countdown2Value += seconds;
-            updateStarsDisplay();
-            updateCountdown2Display();
-            
-            // Increase purchase count and price for next time
-            totalShopPurchases++;
-            shopPurchaseCounts[priceKey]++;
-            shopPrices[priceKey] = Math.floor(shopPrices[priceKey] * 1.4); // 40% price increase
-            
-            showStarsBonus(`⏳ +${seconds} Sekunden! Mehr Zeit! (${totalShopPurchases}/${maxShopPurchases})`);
-            updateShopButtons();
-        } else {
-            showStarsBonus('Nicht genug Sterne! ⭐');
-        }
-    }
     
-    function handleBuySlowMode() {
-        const cost = shopPrices.slowMode;
-        if (totalShopPurchases >= maxShopPurchases) {
-            showStarsBonus('Maximale Anzahl Einkäufe erreicht! (3/3)');
-            return;
-        }
-        if (playerStars >= cost && !slowModeActive) {
-            playerStars -= cost;
-            slowModeActive = true;
-            
-            // Increase slow mode price
-            totalShopPurchases++;
-            shopPurchaseCounts.slowMode++;
-            shopPrices.slowMode = Math.floor(shopPrices.slowMode * 2); // Double price
-            
-            updateStarsDisplay();
-            showStarsBonus(`🐌 Slow Mode aktiv! Countdown geht langsamer! (${totalShopPurchases}/${maxShopPurchases})`);
-            updateSlowModeButton();
-            updateShopButtons();
-        } else if (slowModeActive) {
-            showStarsBonus('Slow Mode bereits aktiv! 🐌');
-        } else {
-            showStarsBonus('Nicht genug Sterne! ⭐');
-        }
-    }
 
     // --- QUIZ LOGIC ---
     const allQuestions = [
@@ -2098,7 +2459,7 @@ document.addEventListener('DOMContentLoaded', () => {
             correct_variations: ["krokodil", "crocodile", "alligator"]
         },
         {
-            brutal_question: "💀 ZAHLEN DER VERDAMMNIS 💀\n\nDrei Würfel fallen perfekt - multipliziere das Ergebnis mit der Anzahl der Elemente,\nSubtrahiere die Finger deiner beiden Hände,\nAddiere das Jahr deiner Geburt,\nSubtrahiere das Doppelte des Tages, an dem deine Liebe geboren wurde im letzten Monat des Jahres.\n\nWelche Zahl bin ich? 💀",
+            brutal_question: "💀 ZAHLEN DER VERDAMMNIS 💀\n\nDrei Würfel fallen perfekt - addiere das Ergebnis zu zweitausend,\nAddiere die Finger deiner beiden Hände,\nSubtrahiere die Köpfe des Höllenhunds.\n\nWelche Zahl bin ich? 💀",
             answer: "2025",
             correct_variations: ["2025", "2025.0", "2025,0"]
         },
@@ -2572,6 +2933,79 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- BIRTHDAY VISUALS MANAGEMENT ---
+    function manageBirthdayVisuals() {
+        let birthdayVisuals = document.querySelector('.birthday-visuals');
+        
+        // If birthday visuals don't exist and countdown hasn't started, recreate them
+        if (!birthdayVisuals && !countdownStarted) {
+            birthdayVisuals = document.createElement('div');
+            birthdayVisuals.className = 'birthday-visuals';
+            birthdayVisuals.innerHTML = `
+                <div class="floating-balloon">🎈</div>
+                <div class="floating-balloon">🎈</div>
+                <div class="floating-balloon">🎈</div>
+                <div class="floating-balloon">🎈</div>
+                <div class="floating-star">⭐</div>
+                <div class="floating-star">✨</div>
+                <div class="floating-star">🌟</div>
+                <div class="floating-star">⭐</div>
+                <div class="floating-gift">🎁</div>
+                <div class="floating-gift">🎁</div>
+                <div class="floating-confetti">🎊</div>
+                <div class="floating-confetti">🎉</div>
+                <div class="floating-confetti">🎊</div>
+            `;
+            document.body.insertBefore(birthdayVisuals, document.body.firstChild.nextSibling);
+        }
+        
+        // Show/hide based on countdown state
+        if (birthdayVisuals) {
+            if (countdownStarted) {
+                birthdayVisuals.style.display = 'none';
+            } else {
+                birthdayVisuals.style.display = 'block';
+            }
+        }
+    }
+
+    // --- GAME PARTICLE EFFECTS ---
+    function createGameParticles(element, emoji) {
+        const rect = element.getBoundingClientRect();
+        for (let i = 0; i < 3; i++) {
+            const particle = document.createElement('div');
+            particle.textContent = emoji;
+            particle.style.position = 'fixed';
+            particle.style.left = (rect.left + rect.width/2) + 'px';
+            particle.style.top = (rect.top + rect.height/2) + 'px';
+            particle.style.fontSize = '1.5em';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '9999';
+            particle.style.animation = `game-particle-${i} 1s ease-out forwards`;
+            
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 1000);
+        }
+    }
+
+    // Add particle animations to CSS dynamically
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes game-particle-0 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-30px, -50px) scale(0.3); opacity: 0; }
+        }
+        @keyframes game-particle-1 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(0, -60px) scale(0.3); opacity: 0; }
+        }
+        @keyframes game-particle-2 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(30px, -50px) scale(0.3); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+
     // --- GENERAL PURPOSE & INITIALIZATION ---
     function createStars() {
         for (let i = 0; i < 100; i++) {
@@ -2673,8 +3107,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function getBestTicTacToeMove() {
-        // Balanced AI for ~50% win rate: 50% chance to play optimally, 50% random
-        const shouldPlayOptimally = Math.random() < 0.5;
+        // CHALLENGING MODE: 75% optimal play - still beatable with strategy
+        const shouldPlayOptimally = Math.random() < 0.75;
         
         if (shouldPlayOptimally) {
             // Try to win
@@ -2689,8 +3123,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Try to block player (only 70% of the time)
-            if (Math.random() < 0.7) {
+            // Block player wins most of the time (80% chance)
+            if (Math.random() < 0.8) {
                 for (let i = 0; i < 9; i++) {
                     if (ticTacToeBoard[i] === '') {
                         ticTacToeBoard[i] = 'X';
@@ -2703,8 +3137,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Take center if available
-            if (ticTacToeBoard[4] === '') return 4;
+            // Strategic positioning: prioritize center, corners, then edges
+            const strategicMoves = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+            for (let move of strategicMoves) {
+                if (ticTacToeBoard[move] === '') {
+                    return move;
+                }
+            }
         }
         
         // Random move (either because AI chose random or fell through strategic logic)
@@ -2761,6 +3200,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // ROCK PAPER SCISSORS GAME
+    function predictPlayerChoice() {
+        const history = window.rpsPlayerHistory;
+        if (history.length < 2) return 'rock'; // default
+        
+        // Look for most recent pattern
+        const lastChoice = history[history.length - 1];
+        const secondLastChoice = history[history.length - 2];
+        
+        // Look for sequences and tendencies
+        const counts = { rock: 0, paper: 0, scissors: 0 };
+        history.forEach(choice => counts[choice]++);
+        
+        // If player is repeating patterns, predict they'll continue
+        if (lastChoice === secondLastChoice) {
+            return lastChoice; // Player likes to repeat
+        }
+        
+        // If player alternates, predict the opposite of last choice
+        const sequences = history.slice(-3);
+        if (sequences.length === 3) {
+            if (sequences[0] !== sequences[1] && sequences[1] !== sequences[2]) {
+                // Player is alternating, predict they'll switch again
+                const options = ['rock', 'paper', 'scissors'];
+                return options.find(choice => choice !== lastChoice && choice !== secondLastChoice);
+            }
+        }
+        
+        // Predict the least used choice (players often balance their choices)
+        const leastUsed = Object.keys(counts).reduce((a, b) => counts[a] <= counts[b] ? a : b);
+        return leastUsed;
+    }
+
     function initRockPaperScissors() {
         // Reset game state
         rpsPlayerScore = 0;
@@ -2783,8 +3254,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function makeRPSChoice(playerChoice) {
-        const choices = ['rock', 'paper', 'scissors'];
-        const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+        // HARD MODE: Smart AI that tracks player patterns and counters them
+        let computerChoice;
+        
+        // Track player history for pattern recognition
+        if (!window.rpsPlayerHistory) window.rpsPlayerHistory = [];
+        if (!window.rpsRoundNumber) window.rpsRoundNumber = 0;
+        
+        window.rpsPlayerHistory.push(playerChoice);
+        window.rpsRoundNumber++;
+        
+        // 80% chance to use pattern analysis, 20% random to keep some unpredictability
+        if (Math.random() < 0.8 && window.rpsPlayerHistory.length >= 2) {
+            // Predict based on player patterns
+            const predictedChoice = predictPlayerChoice();
+            // Counter the predicted choice
+            const counterMap = {
+                'rock': 'paper',
+                'paper': 'scissors', 
+                'scissors': 'rock'
+            };
+            computerChoice = counterMap[predictedChoice];
+        } else {
+            // Strategic fallback - bias toward winning moves
+            const choices = ['rock', 'paper', 'scissors'];
+            const weights = [0.4, 0.35, 0.25]; // Slightly favor rock and paper
+            const random = Math.random();
+            let cumulative = 0;
+            for (let i = 0; i < choices.length; i++) {
+                cumulative += weights[i];
+                if (random <= cumulative) {
+                    computerChoice = choices[i];
+                    break;
+                }
+            }
+        }
         
         // Disable buttons during round
         document.querySelectorAll('.rps-choice-btn').forEach(btn => btn.disabled = true);
@@ -2822,8 +3326,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         rpsRound++;
         
-        // Check for game end (best of 3)
-        if (rpsPlayerScore === 2 || rpsComputerScore === 2) {
+        // Check for game end (best of 5) - HARD MODE: need 3 wins
+        if (rpsPlayerScore === 3 || rpsComputerScore === 3) {
             setTimeout(() => endRPSGame(), 2000);
         } else {
             // Continue game
@@ -2837,7 +3341,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function endRPSGame() {
-        const won = rpsPlayerScore === 2;
+        const won = rpsPlayerScore === 3;
         const message = won ? 'Du hast gewonnen! 🎉' : 'Ich habe gewonnen! 😈';
         
         document.getElementById('rps-status').textContent = message;
@@ -2883,8 +3387,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('memory-status').textContent = 'Klicke auf die Karten!';
         document.getElementById('memory-result').classList.add('hidden');
         
-        // Create card deck (6 pairs)
-        const symbols = ['🎯', '🎮', '🎵', '🎪', '🎨', '🎭'];
+        // HARD MODE: 8 pairs instead of 6
+        const symbols = ['🎯', '🎮', '🎵', '🎪', '🎨', '🎭', '🎲', '🎳'];
         const cardDeck = [...symbols, ...symbols];
         shuffleArray(cardDeck);
         
@@ -2895,9 +3399,9 @@ document.addEventListener('DOMContentLoaded', () => {
         cardDeck.forEach((symbol, index) => {
             const card = document.createElement('button');
             card.style.cssText = `
-                width: 80px; 
-                height: 80px; 
-                font-size: 2em; 
+                width: 70px; 
+                height: 70px; 
+                font-size: 1.8em; 
                 background: #6c757d; 
                 border: 2px solid #333; 
                 cursor: pointer;
@@ -2953,8 +3457,8 @@ document.addEventListener('DOMContentLoaded', () => {
             memoryPairs++;
             document.getElementById('memory-pairs').textContent = memoryPairs;
             
-            // Check for game completion
-            if (memoryPairs === 6) {
+            // Check for game completion - HARD MODE: 8 pairs
+            if (memoryPairs === 8) {
                 endMemoryGame(true);
             }
         } else {
@@ -2970,8 +3474,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset flipped cards
         memoryFlippedCards = [];
         
-        // Check for failure (too many attempts)
-        if (memoryAttempts >= 15 && memoryPairs < 6) {
+        // Check for failure (too many attempts) - HARD MODE: 12 attempts for 8 pairs
+        if (memoryAttempts >= 12 && memoryPairs < 8) {
             endMemoryGame(false);
         }
     }
