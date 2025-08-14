@@ -29,8 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
         'mini-games-challenge-page': document.getElementById('mini-games-challenge-page'),
         'tic-tac-toe-game-page': document.getElementById('tic-tac-toe-game-page'),
         'rock-paper-scissors-game-page': document.getElementById('rock-paper-scissors-game-page'),
-        'memory-match-game-page': document.getElementById('memory-match-game-page'),
+        'math-battle-game-page': document.getElementById('memory-match-game-page'), // Reusing the same HTML element
         'mini-games-victory-page': document.getElementById('mini-games-victory-page'),
+        'quiz-answers-review-page': document.getElementById('quiz-answers-review-page'),
+        'quiz-answers-display-page': document.getElementById('quiz-answers-display-page'), 
+        'loading-minigame-page': document.getElementById('loading-minigame-page'),
+        'pending-next-step-page': document.getElementById('pending-next-step-page'),
         'give-up-confirmation-page': document.getElementById('give-up-confirmation-page'),
         'game-disappointed-page': document.getElementById('game-disappointed-page'),
         'game-convince-attempt-page': document.getElementById('game-convince-attempt-page'),
@@ -40,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'hard-game-over-page': document.getElementById('hard-game-over-page'),
         'hard-mode-victory-page': document.getElementById('hard-mode-victory-page'),
         'final-countdown-page': document.getElementById('final-countdown-page'),
+        'credits-page': document.getElementById('credits-page'),
     };
 
     // Other UI Elements
@@ -52,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backgroundMusic = document.getElementById('background-music');
     const collectedHintsDisplay = document.getElementById('collected-hints-display');
     const revealSound = document.getElementById('reveal-sound');
+    const creditsMusic = document.getElementById('credits-music');
     const countdownMusic = document.getElementById('countdown-music');
     const countdown1000Music = document.getElementById('countdown1000-music');
     const errorSound = document.getElementById('error-sound');
@@ -62,8 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const hardmodeMusic = document.getElementById('hardmode-music');
     const finalCountdownMusic = document.getElementById('final-countdown-music');
     const hardModeVictoryMusic = document.getElementById('hard-mode-victory-music');
+    const quizReflectionMusic = document.getElementById('quiz-reflection-music');
     const gamingMusic = document.getElementById('gaming-music');
     const gameover2Sound = document.getElementById('gameover2-sound');
+    const quizanswerMusic = document.getElementById('quizanswer-music');
+    const loadingMusic = document.getElementById('loading-music');
+    const glitchSound = document.getElementById('glitch-sound');
+    const loadinggameMusic = document.getElementById('loadinggame-music');
+    const barloadedSound = document.getElementById('barloaded-sound');
     const pageMarker = document.getElementById('pm');
     const countdownDisplay = document.getElementById('countdown-display');
     const countdown2Display = document.getElementById('countdown2-display');
@@ -181,7 +193,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 'skip-to-countdown2-error-btn': () => startFinalErrorSequence(),
                 'skip-to-relief-btn': () => renderStep('relief'),
                 'skip-to-game-suggestions-btn': () => renderStep('game-suggestions'),
-                'skip-to-hard-victory-btn': () => renderStep('hard-mode-victory')
+                'skip-to-hard-victory-btn': () => renderStep('hard-mode-victory'),
+                'skip-to-mini-games-btn': () => renderStep('mini-games-challenge'),
+                'skip-to-tic-tac-toe-btn': () => renderStep('tic-tac-toe-game'),
+                'skip-to-rock-paper-scissors-btn': () => renderStep('rock-paper-scissors-game'),
+                'skip-to-color-match-btn': () => renderStep('connect4-game'),
+                'skip-to-mini-victory-btn': () => renderStep('mini-games-victory'),
+                'jump-to-credits-btn': () => renderStep('credits'),
+                'skip-to-quiz-answers-btn': () => renderStep('quiz-answers-review'),
+                'skip-to-loading-game-btn': () => renderStep('loading-minigame'),
+                'debug-win-loading-btn': () => debugWinLoading()
             }
         },
         'quiz': {
@@ -425,8 +446,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = pageElements['hint-page'].querySelector('.card');
                 card.style.backgroundImage = "url('./assets/final_background.gif')";
                 triggerConfetti();
+                // Start 30-second timer for credits easter egg
+                startCreditsTimer();
             },
             buttons: {} // No buttons - end of game
+        },
+        'credits': {
+            page: 'credits-page',
+            background: 'black',
+            music: null, // Credits music handled separately
+            onLoad: () => startCreditsSequence(),
+            buttons: {
+                'credits-replay-btn': () => {
+                    // Reset to beginning
+                    renderStep('start');
+                }
+            }
         },
         // New game resistance dialog steps
         'game-resistance-1': {
@@ -503,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
             music: 'hard-mode-victory',
             onLoad: null,
             buttons: {
-                'hard-victory-continue-btn': () => renderStep('final-countdown')
+                'hard-victory-continue-btn': () => renderStep('quiz-answers-review')
             }
         },
         'final-countdown': {
@@ -545,13 +580,13 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             buttons: {}
         },
-        'memory-match-game': {
-            page: 'memory-match-game-page',
+        'connect4-game': {
+            page: 'math-battle-game-page', // Reusing same HTML element (memory-match-game-page)
             background: 'gaming',
             music: 'gaming', 
             onLoad: () => {
-                currentGameStep = 'memory-match-game';
-                initMemoryMatch();
+                currentGameStep = 'connect4-game';
+                initConnect4();
             },
             buttons: {}
         },
@@ -561,14 +596,71 @@ document.addEventListener('DOMContentLoaded', () => {
             music: 'hard-mode-victory',
             onLoad: null,
             buttons: {
-                'mini-victory-final-countdown-btn': () => renderStep('final-countdown')
+                'mini-victory-final-countdown-btn': () => renderStep('quiz-answers-review')
+            }
+        },
+        'quiz-answers-review': {
+            page: 'quiz-answers-review-page',
+            background: 'quiz-reflection',
+            music: 'background',
+            onLoad: () => {
+                console.log('Quiz answers review loaded!');
+                setTimeout(() => createQuizReviewEffects(), 500);
+            },
+            buttons: {
+                'show-quiz-answers-btn': () => renderStep('quiz-answers-display')
+            }
+        },
+        'quiz-answers-display': {
+            page: 'quiz-answers-display-page',
+            background: 'quiz-reflection',
+            music: 'quizanswer',
+            onLoad: () => showQuizAnswers(),
+            buttons: {
+                'totally-got-it-btn': () => renderStep('loading-minigame'),
+                'could-imagine-btn': () => renderStep('loading-minigame')
+            }
+        },
+        'pending-next-step': {
+            page: 'pending-next-step-page',
+            background: 'quiz-reflection',
+            music: 'background',
+            onLoad: null,
+            buttons: {
+                'continue-to-reveal-btn': () => renderStep('loading-minigame')
+            }
+        },
+        'loading-minigame': {
+            page: 'loading-minigame-page',
+            background: 'gaming',
+            music: 'loading',
+            onLoad: null,
+            buttons: {
+                'start-loading-btn': () => startLoadingGame(),
+                'help-loading-btn': () => startInteractiveLoading(),
+                'reveal-present-btn': () => startPresentRevealAnimation(),
+                'debug-add-100-btn': () => applyLoadingChange(100)
             }
         },
         'give-up-confirmation': {
             page: 'give-up-confirmation-page',
             background: 'gaming',
             music: 'gaming',
-            onLoad: null,
+            onLoad: () => {
+                // Show current progress
+                const progressDiv = document.getElementById('progress-summary');
+                let progressText = '';
+                if (miniGamesProgress >= 1) progressText += '✅ Tic-Tac-Toe gemeistert<br>';
+                if (miniGamesProgress >= 2) progressText += '✅ Schere-Stein-Papier gewonnen<br>';
+                if (miniGamesProgress >= 3) progressText += '✅ Connect 3 erobert<br>';
+                
+                if (progressText === '') {
+                    progressText = '🎯 Bereit für das erste Spiel!<br>';
+                } else {
+                    progressText += `📊 ${miniGamesProgress}/3 Spielen abgeschlossen`;
+                }
+                progressDiv.innerHTML = progressText;
+            },
             buttons: {
                 'confirm-give-up-btn': () => {
                     gamingMusic.pause();
@@ -690,6 +782,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'golden-victory':
                 document.body.classList.add('golden-victory-active');
+                break;
+            case 'quiz-reflection':
+                document.body.classList.add('quiz-reflection-active');
                 break;
             case 'final-countdown':
                 document.body.classList.add('final-countdown-active');
@@ -859,6 +954,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 hardModeVictoryMusic.currentTime = 0;
                 hardModeVictoryMusic.play().catch(e => console.log('Hard mode victory music play prevented:', e));
                 break;
+            case 'quiz-reflection':
+                backgroundMusic.pause();
+                countdownMusic.pause();
+                sadMusic.pause();
+                gameSuggestionMusic.pause();
+                reliefMusic.pause();
+                hardmodeMusic.pause();
+                finalCountdownMusic.pause();
+                gamingMusic.pause();
+                hardModeVictoryMusic.pause();
+                // Play quiz reflection music (if available)
+                if (quizReflectionMusic) {
+                    quizReflectionMusic.currentTime = 0;
+                    quizReflectionMusic.play().catch(e => console.log('Quiz reflection music play prevented:', e));
+                } else {
+                    console.log('Quiz reflection music element not found - continuing without music');
+                }
+                break;
             case 'final-countdown':
                 backgroundMusic.pause();
                 countdownMusic.pause();
@@ -884,6 +997,66 @@ document.addEventListener('DOMContentLoaded', () => {
                 sadMusic.pause();
                 hardmodeMusic.pause();
                 finalCountdownMusic.pause();
+                quizanswerMusic.pause();
+                loadingMusic.pause();
+                loadinggameMusic.pause();
+                break;
+            case 'quizanswer':
+                backgroundMusic.pause();
+                countdownMusic.pause();
+                countdown1000Music.pause();
+                errorSound.pause();
+                reliefSound.pause();
+                revealSound.pause();
+                gameSuggestionMusic.pause();
+                sadMusic.pause();
+                hardmodeMusic.pause();
+                finalCountdownMusic.pause();
+                gamingMusic.pause();
+                hardModeVictoryMusic.pause();
+                loadingMusic.pause();
+                loadinggameMusic.pause();
+                // Play quiz answer music
+                quizanswerMusic.currentTime = 0;
+                quizanswerMusic.play().catch(e => console.log('Quiz answer music play prevented:', e));
+                break;
+            case 'loading':
+                backgroundMusic.pause();
+                countdownMusic.pause();
+                countdown1000Music.pause();
+                errorSound.pause();
+                reliefSound.pause();
+                revealSound.pause();
+                gameSuggestionMusic.pause();
+                sadMusic.pause();
+                hardmodeMusic.pause();
+                finalCountdownMusic.pause();
+                gamingMusic.pause();
+                hardModeVictoryMusic.pause();
+                quizanswerMusic.pause();
+                loadinggameMusic.pause();
+                // Play loading music
+                loadingMusic.currentTime = 0;
+                loadingMusic.play().catch(e => console.log('Loading music play prevented:', e));
+                break;
+            case 'loadinggame':
+                backgroundMusic.pause();
+                countdownMusic.pause();
+                countdown1000Music.pause();
+                errorSound.pause();
+                reliefSound.pause();
+                revealSound.pause();
+                gameSuggestionMusic.pause();
+                sadMusic.pause();
+                hardmodeMusic.pause();
+                finalCountdownMusic.pause();
+                gamingMusic.pause();
+                hardModeVictoryMusic.pause();
+                quizanswerMusic.pause();
+                loadingMusic.pause();
+                // Play loading game music
+                loadinggameMusic.currentTime = 0;
+                loadinggameMusic.play().catch(e => console.log('Loading game music play prevented:', e));
                 break;
             case null:
             default:
@@ -910,13 +1083,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btnElement = document.getElementById(btnId);
                 if (btnElement) {
                     console.log(`Found button element: ${btnId}`);
-                    // Replace the listener by cloning the node to remove old listeners
-                    const newBtn = btnElement.cloneNode(true);
-                    btnElement.parentNode.replaceChild(newBtn, btnElement);
-                    newBtn.addEventListener('click', () => {
+                    
+                    // Clear any existing onclick handler
+                    btnElement.onclick = null;
+                    
+                    // Add the click event listener directly
+                    btnElement.onclick = (e) => {
                         console.log(`Button clicked: ${btnId}`);
-                        step.buttons[btnId]();
-                    });
+                        try {
+                            step.buttons[btnId]();
+                        } catch (error) {
+                            console.error(`Error executing button handler for ${btnId}:`, error);
+                        }
+                    };
                     console.log(`Event listener attached to: ${btnId}`);
                 } else {
                     console.warn(`Button element "${btnId}" not found for step "${stepId}"`);
@@ -3342,9 +3521,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function endRPSGame() {
         const won = rpsPlayerScore === 3;
-        const message = won ? 'Du hast gewonnen! 🎉' : 'Ich habe gewonnen! 😈';
+        const message = won ? 'RPS Victory! 🎉 Weiter zum finalen Spiel!' : 'Ich habe gewonnen! 😈';
         
-        document.getElementById('rps-status').textContent = message;
         document.getElementById('rps-result').classList.remove('hidden');
         document.getElementById('rps-result-text').textContent = message;
         
@@ -3355,7 +3533,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('rps-restart-challenge-btn').classList.add('hidden');
             
             document.getElementById('rps-continue-btn').onclick = () => {
-                renderStep('memory-match-game');
+                renderStep('connect4-game');
             };
         } else {
             // Player lost - stop gaming music and play game over sound
@@ -3373,149 +3551,1122 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // MEMORY MATCH GAME
-    function initMemoryMatch() {
+    // CONNECT 4 GAME
+    let connect4Grid = [];
+    let connect4CurrentPlayer = 1; // 1 = player (red), 2 = AI (blue)
+    let connect4GameOver = false;
+    let connect4Columns = 5;
+    let connect4Rows = 4;
+    
+    function initConnect4() {
         // Reset game state
-        memoryCards = [];
-        memoryFlippedCards = [];
-        memoryAttempts = 0;
-        memoryPairs = 0;
+        connect4Grid = [];
+        connect4CurrentPlayer = 1;
+        connect4GameOver = false;
+        
+        // Initialize empty grid
+        for (let row = 0; row < connect4Rows; row++) {
+            connect4Grid[row] = [];
+            for (let col = 0; col < connect4Columns; col++) {
+                connect4Grid[row][col] = 0; // 0 = empty, 1 = player, 2 = AI
+            }
+        }
         
         // Update UI
-        document.getElementById('memory-attempts').textContent = '0';
-        document.getElementById('memory-pairs').textContent = '0';
-        document.getElementById('memory-status').textContent = 'Klicke auf die Karten!';
-        document.getElementById('memory-result').classList.add('hidden');
+        document.getElementById('connect4-status').textContent = 'Du bist dran! Klicke auf eine Spalte!';
+        document.getElementById('connect4-result').classList.add('hidden');
         
-        // HARD MODE: 8 pairs instead of 6
-        const symbols = ['🎯', '🎮', '🎵', '🎪', '🎨', '🎭', '🎲', '🎳'];
-        const cardDeck = [...symbols, ...symbols];
-        shuffleArray(cardDeck);
+        createConnect4Grid();
+        createConnect4Buttons();
+    }
+    
+    function createConnect4Grid() {
+        const grid = document.getElementById('connect4-game-grid');
+        grid.innerHTML = '';
         
-        // Create card elements
-        const memoryBoard = document.getElementById('memory-board');
-        memoryBoard.innerHTML = '';
+        // Create 4x5 grid (4 rows, 5 columns)
+        for (let row = 0; row < connect4Rows; row++) {
+            for (let col = 0; col < connect4Columns; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'connect4-cell';
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                
+                cell.style.cssText = `
+                    width: 50px; height: 50px; border: 2px solid #FFF;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 2em; cursor: default; border-radius: 50%;
+                    background: #FFF;
+                `;
+                
+                grid.appendChild(cell);
+            }
+        }
         
-        cardDeck.forEach((symbol, index) => {
-            const card = document.createElement('button');
-            card.style.cssText = `
-                width: 70px; 
-                height: 70px; 
-                font-size: 1.8em; 
-                background: #6c757d; 
-                border: 2px solid #333; 
-                cursor: pointer;
-                border-radius: 8px;
+        updateConnect4Display();
+    }
+    
+    function createConnect4Buttons() {
+        const buttonsContainer = document.getElementById('connect4-buttons');
+        buttonsContainer.innerHTML = '';
+        
+        // Create column buttons
+        for (let col = 0; col < connect4Columns; col++) {
+            const btn = document.createElement('button');
+            btn.className = 'connect4-col-btn pulse-button';
+            btn.textContent = `${col + 1}`;
+            btn.style.cssText = `
+                width: 50px; height: 35px; background: #28a745;
+                border: none; border-radius: 5px; color: white;
+                font-weight: bold; cursor: pointer; font-size: 1em;
             `;
-            card.textContent = '❓';
-            card.dataset.symbol = symbol;
-            card.dataset.index = index;
-            card.onclick = () => flipMemoryCard(index);
-            memoryBoard.appendChild(card);
             
-            memoryCards.push({
-                symbol: symbol,
-                flipped: false,
-                matched: false,
-                element: card
-            });
-        });
-    }
-    
-    function flipMemoryCard(index) {
-        const card = memoryCards[index];
-        
-        // Don't flip if already flipped or matched, or if 2 cards already flipped
-        if (card.flipped || card.matched || memoryFlippedCards.length >= 2) return;
-        
-        // Flip card
-        card.flipped = true;
-        card.element.textContent = card.symbol;
-        card.element.style.background = '#28a745';
-        memoryFlippedCards.push(index);
-        
-        // Check if 2 cards are flipped
-        if (memoryFlippedCards.length === 2) {
-            memoryAttempts++;
-            document.getElementById('memory-attempts').textContent = memoryAttempts;
-            
-            setTimeout(() => checkMemoryMatch(), 1000);
+            btn.onclick = () => dropPiece(col);
+            buttonsContainer.appendChild(btn);
         }
     }
     
-    function checkMemoryMatch() {
-        const [index1, index2] = memoryFlippedCards;
-        const card1 = memoryCards[index1];
-        const card2 = memoryCards[index2];
-        
-        if (card1.symbol === card2.symbol) {
-            // Match found
-            card1.matched = true;
-            card2.matched = true;
-            card1.element.style.background = '#FFD700';
-            card2.element.style.background = '#FFD700';
-            memoryPairs++;
-            document.getElementById('memory-pairs').textContent = memoryPairs;
+    function updateConnect4Display() {
+        const cells = document.querySelectorAll('.connect4-cell');
+        cells.forEach((cell, index) => {
+            const row = Math.floor(index / connect4Columns);
+            const col = index % connect4Columns;
+            const value = connect4Grid[row][col];
             
-            // Check for game completion - HARD MODE: 8 pairs
-            if (memoryPairs === 8) {
-                endMemoryGame(true);
+            if (value === 1) {
+                cell.textContent = '🔴'; // Player
+                cell.style.background = '#FFB3B3';
+            } else if (value === 2) {
+                cell.textContent = '🔵'; // AI
+                cell.style.background = '#B3B3FF';
+            } else {
+                cell.textContent = '';
+                cell.style.background = '#FFF';
             }
+        });
+    }
+    
+    function dropPiece(col) {
+        if (connect4GameOver || connect4CurrentPlayer !== 1) return;
+        
+        // Find the lowest empty row in this column
+        let targetRow = -1;
+        for (let row = connect4Rows - 1; row >= 0; row--) {
+            if (connect4Grid[row][col] === 0) {
+                targetRow = row;
+                break;
+            }
+        }
+        
+        if (targetRow === -1) {
+            document.getElementById('connect4-status').textContent = 'Diese Spalte ist voll!';
+            return;
+        }
+        
+        // Drop player piece
+        connect4Grid[targetRow][col] = 1;
+        updateConnect4Display();
+        createGameParticles(document.querySelector(`[data-row="${targetRow}"][data-col="${col}"]`), '🔴');
+        
+        // Check for player win
+        const playerWinPositions = checkConnect4Win(targetRow, col, 1);
+        if (playerWinPositions) {
+            highlightWinningPieces(playerWinPositions);
+            setTimeout(() => endConnect4Game(true), 1000); // Delay to show highlight
+            return;
+        }
+        
+        // Check for tie
+        if (isConnect4BoardFull()) {
+            endConnect4Game(null); // Tie
+            return;
+        }
+        
+        // AI turn
+        connect4CurrentPlayer = 2;
+        document.getElementById('connect4-status').textContent = 'KI denkt nach... 🤖';
+        
+        setTimeout(() => {
+            makeAIMove();
+        }, 800);
+    }
+    
+    function makeAIMove() {
+        if (connect4GameOver) return;
+        
+        // Enhanced AI strategy with multiple priorities:
+        // 1. Try to win immediately
+        // 2. Block player from winning
+        // 3. Create multiple threats (fork)
+        // 4. Build towards 3-in-a-row
+        // 5. Play strategic positions
+        // 6. Prefer center columns
+        // 7. Avoid giving player winning opportunities
+        
+        let bestCol = -1;
+        let bestScore = -1000;
+        
+        // Evaluate all possible moves
+        for (let col = 0; col < connect4Columns; col++) {
+            const testRow = getLowestEmptyRow(col);
+            if (testRow === -1) continue; // Column full
+            
+            let score = 0;
+            
+            // Test AI move
+            connect4Grid[testRow][col] = 2;
+            
+            // Priority 1: Check for winning move (highest priority)
+            if (checkConnect4Win(testRow, col, 2)) {
+                connect4Grid[testRow][col] = 0;
+                bestCol = col;
+                break; // Immediate win, take it!
+            }
+            
+            // Priority 2: Check if this prevents player win (very high priority)
+            connect4Grid[testRow][col] = 1; // Test player move
+            if (checkConnect4Win(testRow, col, 1)) {
+                score += 500; // High priority to block
+            }
+            connect4Grid[testRow][col] = 2; // Back to AI move
+            
+            // Priority 3: Count potential winning threats this move creates
+            score += countPotentialWins(testRow, col, 2) * 100;
+            
+            // Priority 4: Evaluate position strength (connections)
+            score += evaluatePosition(testRow, col, 2) * 10;
+            
+            // Priority 5: Center column preference (strategic)
+            if (col === 2) score += 20; // Center column
+            if (col === 1 || col === 3) score += 15; // Near center
+            
+            // Priority 6: Avoid giving player opportunities
+            if (testRow > 0) {
+                connect4Grid[testRow - 1][col] = 1; // Test if player could win above
+                if (checkConnect4Win(testRow - 1, col, 1)) {
+                    score -= 200; // Penalty for giving player a win
+                }
+                connect4Grid[testRow - 1][col] = 0; // Reset
+            }
+            
+            // Priority 7: Build vertical threats
+            if (testRow < connect4Rows - 1 && connect4Grid[testRow + 1][col] === 2) {
+                score += 30; // Build on our pieces
+            }
+            
+            connect4Grid[testRow][col] = 0; // Reset
+            
+            // Track best move
+            if (score > bestScore) {
+                bestScore = score;
+                bestCol = col;
+            }
+        }
+        
+        // Fallback: if no good move found, prefer center
+        if (bestCol === -1) {
+            const centerCols = [2, 1, 3, 0, 4];
+            for (const col of centerCols) {
+                if (getLowestEmptyRow(col) !== -1) {
+                    bestCol = col;
+                    break;
+                }
+            }
+        }
+        
+        // Make the move
+        if (bestCol !== -1) {
+            const targetRow = getLowestEmptyRow(bestCol);
+            connect4Grid[targetRow][bestCol] = 2;
+            updateConnect4Display();
+            createGameParticles(document.querySelector(`[data-row="${targetRow}"][data-col="${bestCol}"]`), '🔵');
+            
+            // Check for AI win
+            const aiWinPositions = checkConnect4Win(targetRow, bestCol, 2);
+            if (aiWinPositions) {
+                highlightWinningPieces(aiWinPositions);
+                setTimeout(() => endConnect4Game(false), 1000); // Delay to show highlight
+                return;
+            }
+            
+            // Check for tie
+            if (isConnect4BoardFull()) {
+                endConnect4Game(null);
+                return;
+            }
+            
+            // Player's turn
+            connect4CurrentPlayer = 1;
+            document.getElementById('connect4-status').textContent = 'Du bist dran! Klicke auf eine Spalte!';
+        }
+    }
+    
+    function getLowestEmptyRow(col) {
+        for (let row = connect4Rows - 1; row >= 0; row--) {
+            if (connect4Grid[row][col] === 0) {
+                return row;
+            }
+        }
+        return -1;
+    }
+    
+    function checkConnect4Win(row, col, player) {
+        // Check all 4 directions: horizontal, vertical, diagonal1, diagonal2
+        const directions = [
+            [0, 1],  // horizontal
+            [1, 0],  // vertical
+            [1, 1],  // diagonal \
+            [1, -1]  // diagonal /
+        ];
+        
+        for (const [dRow, dCol] of directions) {
+            let count = 1; // Count the current piece
+            let winningPositions = [[row, col]]; // Track all winning positions
+            
+            // Check in positive direction
+            let checkRow = row + dRow;
+            let checkCol = col + dCol;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns && 
+                   connect4Grid[checkRow][checkCol] === player) {
+                count++;
+                winningPositions.push([checkRow, checkCol]);
+                checkRow += dRow;
+                checkCol += dCol;
+            }
+            
+            // Check in negative direction
+            checkRow = row - dRow;
+            checkCol = col - dCol;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns && 
+                   connect4Grid[checkRow][checkCol] === player) {
+                count++;
+                winningPositions.push([checkRow, checkCol]);
+                checkRow -= dRow;
+                checkCol -= dCol;
+            }
+            
+            // Win condition: 3 in a row (since we have a 5x4 grid)
+            if (count >= 3) {
+                return winningPositions; // Return the winning positions
+            }
+        }
+        
+        return false; // No win found
+    }
+    
+    function isConnect4BoardFull() {
+        for (let col = 0; col < connect4Columns; col++) {
+            if (connect4Grid[0][col] === 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    function highlightWinningPieces(winningPositions) {
+        // Add special highlight class to winning pieces
+        winningPositions.forEach(([row, col]) => {
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            if (cell) {
+                cell.classList.add('winning-piece');
+                cell.style.cssText += `
+                    animation: winPulse 0.8s infinite alternate;
+                    border: 3px solid #FFD700;
+                    box-shadow: 0 0 15px #FFD700;
+                    transform: scale(1.1);
+                `;
+            }
+        });
+    }
+    
+    // Helper function to count potential winning opportunities
+    function countPotentialWins(row, col, player) {
+        let threats = 0;
+        const directions = [
+            [0, 1],  // horizontal
+            [1, 0],  // vertical  
+            [1, 1],  // diagonal \
+            [1, -1]  // diagonal /
+        ];
+        
+        for (const [dRow, dCol] of directions) {
+            let count = 1; // Count the piece we just placed
+            let openEnds = 0;
+            
+            // Count in positive direction
+            let checkRow = row + dRow;
+            let checkCol = col + dCol;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns) {
+                if (connect4Grid[checkRow][checkCol] === player) {
+                    count++;
+                } else if (connect4Grid[checkRow][checkCol] === 0) {
+                    openEnds++;
+                    break;
+                } else {
+                    break; // Blocked by opponent
+                }
+                checkRow += dRow;
+                checkCol += dCol;
+            }
+            
+            // Count in negative direction
+            checkRow = row - dRow;
+            checkCol = col - dCol;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns) {
+                if (connect4Grid[checkRow][checkCol] === player) {
+                    count++;
+                } else if (connect4Grid[checkRow][checkCol] === 0) {
+                    openEnds++;
+                    break;
+                } else {
+                    break; // Blocked by opponent
+                }
+                checkRow -= dRow;
+                checkCol -= dCol;
+            }
+            
+            // If we have 2+ in a row with open ends, that's a threat
+            if (count >= 2 && openEnds > 0) {
+                threats += count; // More pieces = stronger threat
+            }
+        }
+        
+        return threats;
+    }
+    
+    // Helper function to evaluate position strength
+    function evaluatePosition(row, col, player) {
+        let score = 0;
+        const directions = [
+            [0, 1],  // horizontal
+            [1, 0],  // vertical  
+            [1, 1],  // diagonal \
+            [1, -1]  // diagonal /
+        ];
+        
+        for (const [dRow, dCol] of directions) {
+            let count = 1; // Count the piece we just placed
+            
+            // Count in positive direction
+            let checkRow = row + dRow;
+            let checkCol = col + dCol;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns && 
+                   connect4Grid[checkRow][checkCol] === player) {
+                count++;
+                checkRow += dRow;
+                checkCol += dCol;
+            }
+            
+            // Count in negative direction
+            checkRow = row - dRow;
+            checkCol = col - dCol;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns && 
+                   connect4Grid[checkRow][checkCol] === player) {
+                count++;
+                checkRow -= dRow;
+                checkCol -= dCol;
+            }
+            
+            // Score based on how many pieces are connected
+            if (count >= 2) {
+                score += count * count; // Exponential reward for longer connections
+            }
+        }
+        
+        return score;
+    }
+    
+    function endConnect4Game(playerWon) {
+        connect4GameOver = true;
+        let message;
+        
+        if (playerWon === true) {
+            message = 'Connect 4 Victory! 🎉 Challenge erfolgreich!';
+        } else if (playerWon === false) {
+            message = 'KI hat gewonnen! 🤖 Versuch es nochmal!';
         } else {
-            // No match - flip cards back
-            card1.flipped = false;
-            card2.flipped = false;
-            card1.element.textContent = '❓';
-            card2.element.textContent = '❓';
-            card1.element.style.background = '#6c757d';
-            card2.element.style.background = '#6c757d';
+            message = 'Unentschieden! ⚖️ Beide Connect 3 Profis!';
         }
         
-        // Reset flipped cards
-        memoryFlippedCards = [];
+        document.getElementById('connect4-result').classList.remove('hidden');
+        document.getElementById('connect4-result-text').textContent = message;
         
-        // Check for failure (too many attempts) - HARD MODE: 12 attempts for 8 pairs
-        if (memoryAttempts >= 12 && memoryPairs < 8) {
-            endMemoryGame(false);
-        }
-    }
-    
-    function endMemoryGame(won) {
-        // Disable all cards
-        memoryCards.forEach(card => {
-            if (!card.matched) {
-                card.element.disabled = true;
-            }
-        });
-        
-        const message = won ? 'Alle Paare gefunden! 🎉' : 'Zu viele Versuche! 😔';
-        document.getElementById('memory-status').textContent = message;
-        document.getElementById('memory-result').classList.remove('hidden');
-        document.getElementById('memory-result-text').textContent = message;
-        
-        if (won) {
+        if (playerWon === true) {
             // Player won all mini games!
             miniGamesProgress = 3;
-            document.getElementById('memory-continue-btn').classList.remove('hidden');
-            document.getElementById('memory-restart-challenge-btn').classList.add('hidden');
+            const victorySound = document.getElementById('victory-sound');
+            if (victorySound) victorySound.play().catch(e => {});
             
-            document.getElementById('memory-continue-btn').onclick = () => {
-                renderStep('mini-games-victory');
-            };
-        } else {
-            // Player lost - stop gaming music and play game over sound
-            gamingMusic.pause();
-            gameover2Sound.play().catch(e => console.log('Game over 2 sound play prevented:', e));
-            
+            document.getElementById('connect4-continue-btn').classList.remove('hidden');
+            document.getElementById('connect4-restart-challenge-btn').classList.add('hidden');
+            document.getElementById('connect4-continue-btn').onclick = () => renderStep('mini-games-victory');
+        } else if (playerWon === false) {
             // Player lost - restart challenge
-            document.getElementById('memory-restart-challenge-btn').classList.remove('hidden');
-            document.getElementById('memory-continue-btn').classList.add('hidden');
+            gamingMusic.pause();
+            gameover2Sound.play().catch(e => {});
             
-            document.getElementById('memory-restart-challenge-btn').onclick = () => {
+            document.getElementById('connect4-restart-challenge-btn').classList.remove('hidden');
+            document.getElementById('connect4-continue-btn').classList.add('hidden');
+            document.getElementById('connect4-restart-challenge-btn').onclick = () => {
                 miniGamesProgress = 0;
                 renderStep('tic-tac-toe-game');
             };
+        } else {
+            // Tie - allow player to try again or continue
+            document.getElementById('connect4-restart-challenge-btn').classList.remove('hidden');
+            document.getElementById('connect4-continue-btn').classList.remove('hidden');
+            document.getElementById('connect4-restart-challenge-btn').onclick = () => {
+                initConnect4(); // Just restart this game
+            };
+            document.getElementById('connect4-continue-btn').onclick = () => renderStep('mini-games-victory');
         }
+    }
+
+    // Create enhanced floating question marks for quiz review page
+    function createQuizReviewEffects() {
+        const floatingContainer = document.querySelector('#quiz-answers-review-page .floating-questions');
+        if (!floatingContainer) {
+            console.log('No quiz review floating container found - trying to create one');
+            // Create the container if it doesn't exist
+            const page = document.getElementById('quiz-answers-review-page');
+            if (page) {
+                const bgEffects = document.createElement('div');
+                bgEffects.className = 'quiz-answers-bg-effects';
+                const floatingQuestions = document.createElement('div');
+                floatingQuestions.className = 'floating-questions';
+                bgEffects.appendChild(floatingQuestions);
+                page.prepend(bgEffects);
+                // Try again with the new container
+                createQuizReviewEffects();
+            }
+            return;
+        }
+        
+        // Create multiple floating question marks
+        const questionMarks = ['🎯', '❓', '💭', '🤔'];
+        const positions = [
+            { top: '20%', left: '8%', delay: '0s', duration: '7s' },
+            { top: '30%', right: '10%', delay: '2s', duration: '8s' },
+            { top: '50%', left: '15%', delay: '4s', duration: '6s' },
+            { top: '70%', right: '12%', delay: '1s', duration: '9s' }
+        ];
+        
+        positions.forEach((pos, index) => {
+            const mark = document.createElement('div');
+            mark.textContent = questionMarks[index % questionMarks.length];
+            mark.style.cssText = `
+                position: absolute;
+                font-size: ${2.5 + Math.random() * 0.8}em;
+                color: rgba(255, 255, 255, ${0.5 + Math.random() * 0.3});
+                text-shadow: 0 0 15px rgba(102, 126, 234, 0.8), 0 0 30px rgba(240, 147, 251, 0.5);
+                animation: floatQuestion ${pos.duration} infinite ease-in-out;
+                animation-delay: ${pos.delay};
+                pointer-events: none;
+                z-index: 10;
+                ${pos.top ? `top: ${pos.top};` : ''}
+                ${pos.left ? `left: ${pos.left};` : ''}
+                ${pos.right ? `right: ${pos.right};` : ''}
+            `;
+            floatingContainer.appendChild(mark);
+        });
+    }
+
+    // Create enhanced floating question marks for quiz answers page
+    function createQuizAnswersEffects() {
+        const floatingContainer = document.querySelector('#quiz-answers-display-page .floating-questions');
+        if (!floatingContainer) {
+            console.log('No floating container found - trying to create one');
+            // Create the container if it doesn't exist
+            const page = document.getElementById('quiz-answers-display-page');
+            if (page) {
+                const bgEffects = document.createElement('div');
+                bgEffects.className = 'quiz-answers-bg-effects';
+                const floatingQuestions = document.createElement('div');
+                floatingQuestions.className = 'floating-questions';
+                bgEffects.appendChild(floatingQuestions);
+                page.prepend(bgEffects);
+                // Try again with the new container
+                createQuizAnswersEffects();
+            }
+            return;
+        }
+        
+        // Create multiple floating question marks
+        const questionMarks = ['❓', '❔', '🤔', '💭'];
+        const positions = [
+            { top: '15%', left: '5%', delay: '0s', duration: '6s' },
+            { top: '25%', right: '8%', delay: '2s', duration: '8s' },
+            { top: '45%', left: '12%', delay: '4s', duration: '7s' },
+            { top: '65%', right: '15%', delay: '1s', duration: '9s' },
+            { top: '80%', left: '20%', delay: '3s', duration: '6s' }
+        ];
+        
+        positions.forEach((pos, index) => {
+            const mark = document.createElement('div');
+            mark.textContent = questionMarks[index % questionMarks.length];
+            mark.style.cssText = `
+                position: absolute;
+                font-size: ${3 + Math.random() * 1}em;
+                color: rgba(255, 255, 255, 0.9);
+                text-shadow: 0 0 15px rgba(102, 126, 234, 1), 0 0 30px rgba(240, 147, 251, 0.6);
+                animation: floatQuestion ${pos.duration} infinite ease-in-out;
+                animation-delay: ${pos.delay};
+                pointer-events: none;
+                z-index: 10;
+                ${pos.top ? `top: ${pos.top};` : ''}
+                ${pos.left ? `left: ${pos.left};` : ''}
+                ${pos.right ? `right: ${pos.right};` : ''}
+            `;
+            floatingContainer.appendChild(mark);
+        });
+    }
+
+    // Quiz Answers Review Function
+    function showQuizAnswers() {
+        const answersList = document.getElementById('quiz-answers-list');
+        const completeDiv = document.getElementById('quiz-answers-complete');
+        
+        console.log('showQuizAnswers called');
+        console.log('collectedHints:', collectedHints);
+        console.log('collectedHints length:', collectedHints.length);
+        
+        // Additional debugging
+        console.log('Current question index:', currentQuestionIndex);
+        console.log('All questions:', allQuestions.length);
+        
+        // Create enhanced floating effects
+        setTimeout(() => createQuizAnswersEffects(), 500);
+        
+        answersList.innerHTML = '';
+        let delay = 0;
+        
+        // Check if we have any collected hints
+        if (collectedHints.length === 0) {
+            // Try to reconstruct from completed quiz - use all questions with hints
+            console.log('No collected hints, trying to reconstruct from quiz');
+            const reconstructedAnswers = [];
+            for (let i = 0; i < allQuestions.length; i++) {
+                if (allQuestions[i] && allQuestions[i].hint && !allQuestions[i].isFun) {
+                    reconstructedAnswers.push(allQuestions[i].hint);
+                }
+            }
+            
+            // If we successfully reconstructed some answers, use them
+            const answersToShow = reconstructedAnswers.length > 0 ? reconstructedAnswers : ['Krokodil', '2025', 'König', 'Ein Zauberer', 'Banane'];
+            console.log('Using answers:', answersToShow);
+            answersToShow.forEach((answer, index) => {
+                setTimeout(() => {
+                    const answerDiv = document.createElement('div');
+                    answerDiv.className = 'quiz-answer-item';
+                    answerDiv.textContent = answer;
+                    answersList.appendChild(answerDiv);
+                    
+                    // Trigger the show animation
+                    setTimeout(() => {
+                        answerDiv.classList.add('show');
+                    }, 100);
+                    
+                    // Show completion buttons after last answer
+                    if (index === answersToShow.length - 1) {
+                        setTimeout(() => {
+                            completeDiv.classList.remove('hidden');
+                        }, 1000);
+                    }
+                }, delay);
+                
+                delay += 1500;
+            });
+        } else {
+            // Use actual collected hints
+            console.log('Using collected hints');
+            collectedHints.forEach((answer, index) => {
+                setTimeout(() => {
+                    const answerDiv = document.createElement('div');
+                    answerDiv.className = 'quiz-answer-item';
+                    answerDiv.textContent = answer;
+                    answersList.appendChild(answerDiv);
+                    
+                    // Trigger the show animation
+                    setTimeout(() => {
+                        answerDiv.classList.add('show');
+                    }, 100);
+                    
+                    // Show completion buttons after last answer
+                    if (index === collectedHints.length - 1) {
+                        setTimeout(() => {
+                            completeDiv.classList.remove('hidden');
+                        }, 1000);
+                    }
+                }, delay);
+                
+                delay += 1500; // 1.5 second delay between answers
+            });
+        }
+    }
+
+    // Loading Bar Mini-Game Logic
+    let loadingProgress = 0;
+    let loadingInterval = null;
+    let brokenLoadingInterval = null;
+    let interactiveLoadingActive = false;
+    let loadingClickerTimeout = null;
+
+    function startLoadingGame() {
+        console.log('Starting loading game');
+        
+        // Hide initial content, show loading section
+        document.getElementById('loading-title').style.display = 'none';
+        document.getElementById('loading-description').style.display = 'none';
+        document.getElementById('start-loading-btn').classList.add('hidden');
+        document.getElementById('loading-section').classList.remove('hidden');
+        
+        // Start the broken loading animation
+        loadingProgress = 0;
+        startBrokenLoading();
+    }
+
+    function startBrokenLoading() {
+        const progressBar = document.getElementById('loading-progress');
+        const percentageDisplay = document.getElementById('loading-percentage');
+        
+        // Phase 1: Load normally to 20%
+        loadingInterval = setInterval(() => {
+            if (loadingProgress < 20) {
+                loadingProgress += 1;
+                progressBar.style.width = loadingProgress + '%';
+                percentageDisplay.textContent = loadingProgress + '%';
+            } else {
+                clearInterval(loadingInterval);
+                
+                // Play glitch sound when loading starts to break (right at 20%)
+                glitchSound.currentTime = 0;
+                glitchSound.play().catch(e => console.log('Glitch sound play prevented:', e));
+                
+                // Start the broken oscillation after 500ms delay
+                setTimeout(() => {
+                    startBrokenOscillation();
+                }, 500);
+            }
+        }, 400); // Much slower loading to 20%
+    }
+
+    function startBrokenOscillation() {
+        const progressBar = document.getElementById('loading-progress');
+        const percentageDisplay = document.getElementById('loading-percentage');
+        
+        let oscillationCount = 0;
+        const maxOscillations = 8; // Oscillate for about 4 seconds
+        
+        brokenLoadingInterval = setInterval(() => {
+            if (oscillationCount < maxOscillations) {
+                // Randomly add 2% then subtract 5%, or other chaotic patterns
+                const change = Math.random() > 0.6 ? 2 : -5;
+                loadingProgress = Math.max(0, Math.min(100, loadingProgress + change));
+                
+                progressBar.style.width = loadingProgress + '%';
+                percentageDisplay.textContent = loadingProgress + '%';
+                
+                // Add a glitch effect
+                progressBar.style.animation = 'none';
+                setTimeout(() => {
+                    progressBar.style.animation = 'loadingShimmer 2s infinite';
+                }, 100);
+                
+                oscillationCount++;
+            } else {
+                clearInterval(brokenLoadingInterval);
+                // Force it to stop at 14%
+                loadingProgress = 14;
+                progressBar.style.width = '14%';
+                percentageDisplay.textContent = '14%';
+                
+                // Stop loading music when loading gets stuck at 14%
+                loadingMusic.pause();
+                
+                // Show the error dialog after 5 seconds delay
+                setTimeout(() => {
+                    showLoadingError();
+                }, 5000);
+            }
+        }, 500); // Every 500ms
+    }
+
+    function showLoadingError() {
+        document.getElementById('loading-section').classList.add('hidden');
+        document.getElementById('loading-error-dialog').classList.remove('hidden');
+        
+        // No error sound for this step
+    }
+
+    function startInteractiveLoading() {
+        document.getElementById('loading-error-dialog').classList.add('hidden');
+        document.getElementById('interactive-loading').classList.remove('hidden');
+        
+        // Switch to loading game music
+        loadingMusic.pause();
+        loadinggameMusic.currentTime = 0;
+        loadinggameMusic.play().catch(e => console.log('Loading game music play prevented:', e));
+        
+        // Set initial progress to 14%
+        loadingProgress = 14;
+        const interactiveProgress = document.getElementById('interactive-progress');
+        const interactivePercentage = document.getElementById('interactive-percentage');
+        
+        interactiveProgress.style.width = loadingProgress + '%';
+        interactivePercentage.textContent = loadingProgress + '%';
+        
+        interactiveLoadingActive = true;
+        startLoadingClicker();
+    }
+
+
+    function handleLoadingClick(event) {
+        const btn = event.target;
+        const text = btn.textContent;
+        console.log('Button clicked:', text);
+        
+        // Parse the percentage correctly (handle both +3% and -2% formats)
+        let change;
+        if (text.startsWith('+')) {
+            change = parseInt(text.replace('+', '').replace('%', ''));
+        } else if (text.startsWith('-')) {
+            change = parseInt(text.replace('%', '')); // Keep the negative
+        } else {
+            change = parseInt(text.replace('%', ''));
+        }
+        
+        console.log('Parsed change:', change);
+        applyLoadingChange(change); // Apply any change (positive or negative)
+        clearTimeout(loadingClickerTimeout);
+        setTimeout(() => startLoadingClicker(), 300); // Brief pause after click
+    }
+
+    function startLoadingClicker() {
+        if (!interactiveLoadingActive) return;
+        
+        const clickers = [
+            document.getElementById('loading-clicker-1'),
+            document.getElementById('loading-clicker-2'), 
+            document.getElementById('loading-clicker-3'),
+            document.getElementById('loading-clicker-4'),
+            document.getElementById('loading-clicker-5')
+        ];
+        const gameArea = document.querySelector('.loading-game-area');
+        
+        // Always ensure at least 1 green button appears
+        // Randomly pick which button will be green (positive)  
+        const positiveButtonIndex = Math.floor(Math.random() * 5);
+        
+        clickers.forEach((clicker, index) => {
+            let percentChange;
+            if (index === positiveButtonIndex) {
+                // Rare positive button: +2% to +4%
+                percentChange = Math.floor(Math.random() * 3) + 2; // +2 to +4
+                clicker.className = 'loading-percent-btn enhanced-percent-btn green-btn';
+            } else {
+                // Negative buttons: -1% to -3%
+                percentChange = Math.floor(Math.random() * 3) * -1 - 1; // -1 to -3
+                clicker.className = 'loading-percent-btn enhanced-percent-btn red-btn';
+            }
+            // Update button text
+            clicker.textContent = (percentChange > 0 ? '+' : '') + percentChange + '%';
+            
+            // Random position within game area (but keep it clickable)
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            const randomLeft = Math.random() * (gameAreaRect.width - 120); // 120px for button width
+            const randomTop = Math.random() * (gameAreaRect.height - 60); // 60px for button height
+            
+            clicker.style.left = randomLeft + 'px';
+            clicker.style.top = randomTop + 'px';
+            clicker.style.position = 'absolute';
+            clicker.style.display = 'block';
+            
+            // Add direct click event listener
+            clicker.onclick = (e) => {
+                console.log('Direct click on button:', clicker.id, clicker.textContent);
+                handleLoadingClick(e);
+            };
+        });
+        
+        // Auto-next timeout (just move to next button set)
+        loadingClickerTimeout = setTimeout(() => {
+            if (interactiveLoadingActive) {
+                startLoadingClicker(); // Next button set
+            }
+        }, Math.random() * 300 + 500); // 500ms to 800ms (VERY fast!)
+    }
+
+    function applyLoadingChange(change) {
+        if (!interactiveLoadingActive) {
+            console.log('Interactive loading not active');
+            return;
+        }
+        
+        const oldProgress = loadingProgress;
+        loadingProgress = Math.max(0, Math.min(100, loadingProgress + change));
+        
+        console.log(`Progress: ${oldProgress}% + ${change}% = ${loadingProgress}%`);
+        
+        const interactiveProgress = document.getElementById('interactive-progress');
+        const interactivePercentage = document.getElementById('interactive-percentage');
+        
+        if (!interactiveProgress || !interactivePercentage) {
+            console.log('Progress elements not found!');
+            return;
+        }
+        
+        interactiveProgress.style.width = loadingProgress + '%';
+        interactivePercentage.textContent = loadingProgress + '%';
+        
+        // Check if we've reached 100%
+        if (loadingProgress >= 100) {
+            interactiveLoadingActive = false;
+            clearTimeout(loadingClickerTimeout);
+            
+            // Stop loading game music and play bar loaded sound
+            loadinggameMusic.pause();
+            barloadedSound.currentTime = 0;
+            barloadedSound.play().catch(e => console.log('Bar loaded sound play prevented:', e));
+            
+            showLoadingSuccess();
+        }
+    }
+
+    function showLoadingSuccess() {
+        // COMPLETELY hide the entire loading minigame page content
+        const loadingPage = document.getElementById('loading-minigame-page');
+        const gameCard = loadingPage.querySelector('.loading-game-card');
+        
+        // Clear all content from the card
+        gameCard.innerHTML = '';
+        
+        // Create ONLY the final glowing loading bar
+        gameCard.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 40vh;">
+                <div class="final-loading-container">
+                    <div class="final-loading-bar">
+                        <div class="final-loading-fill"></div>
+                    </div>
+                    <div class="final-loading-percentage">100%</div>
+                </div>
+            </div>
+        `;
+        
+        console.log('Single final loading bar created');
+        
+        // Start music after 3.4 seconds (1.6 seconds before final reveal)  
+        setTimeout(() => {
+            backgroundMusic.pause();
+            if (revealSound) {
+                revealSound.currentTime = 0;
+                revealSound.play().catch(e => console.log('Final reveal music play prevented:', e));
+            }
+            
+            // Start giftbox animation synchronized with music
+            startPresentRevealAnimation();
+        }, 3400);
+        
+        // Jump to final reveal after 5 seconds total
+        setTimeout(() => {
+            // Clean up giftbox animation if it exists
+            const giftboxContainer = document.getElementById('giftbox-animation-container');
+            if (giftboxContainer) {
+                document.body.removeChild(giftboxContainer);
+            }
+            
+            console.log('Jumping to final reveal step');
+            renderStep('final-reveal');
+        }, 5000);
+    }
+    
+    function startPresentRevealAnimation() {
+        console.log('Starting giftbox animation');
+        
+        // Create growing giftbox animation
+        const giftboxContainer = document.createElement('div');
+        giftboxContainer.id = 'giftbox-animation-container';
+        giftboxContainer.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            pointer-events: none;
+        `;
+        
+        const giftbox = document.createElement('div');
+        giftbox.textContent = '🎁';
+        giftbox.style.cssText = `
+            font-size: 2em;
+            animation: giftboxGrow 3s ease-out forwards;
+        `;
+        
+        giftboxContainer.appendChild(giftbox);
+        document.body.appendChild(giftboxContainer);
+        
+        // The giftbox will be removed and final reveal triggered by the main timeout in showLoadingSuccess
+    }
+    
+    // Debug function to instantly win loading game
+    function debugWinLoading() {
+        loadingProgress = 100;
+        showLoadingSuccess();
+    }
+
+    // Debug mode variables
+    let debugClickCount = 0;
+    let debugModeEnabled = false;
+    
+    // Hide all debug buttons by default
+    function initializeDebugMode() {
+        const debugButtons = [
+            'skip-to-quiz-btn',
+            'skip-to-system-dialogue-btn',
+            'skip-to-countdown2-btn',
+            'skip-to-countdown2-error-btn',
+            'skip-to-countdown-btn', 
+            'skip-to-relief-btn',
+            'skip-to-game-suggestions-btn',
+            'skip-to-hard-victory-btn',
+            'skip-to-mini-games-btn',
+            'skip-to-tic-tac-toe-btn',
+            'skip-to-rock-paper-scissors-btn',
+            'skip-to-color-match-btn',
+            'skip-to-mini-victory-btn',
+            'jump-to-credits-btn',
+            'skip-to-quiz-answers-btn',
+            'skip-to-loading-game-btn',
+            'debug-win-loading-btn',
+            'debug-add-100-btn',
+            'skip-to-answers-btn'
+        ];
+        
+        debugButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.add('hidden');
+                button.style.display = 'none';
+            }
+        });
+        
+        // Hide the debug panel entirely
+        const debugPanel = document.querySelector('.debug-panel');
+        if (debugPanel) {
+            debugPanel.style.display = 'none';
+        }
+        
+        // Hide page marker
+        const pageMarker = document.getElementById('pm');
+        if (pageMarker) {
+            pageMarker.style.display = 'none';
+        }
+    }
+    
+    // Setup debug mode toggle
+    const debugMusicNote = document.getElementById('debug-music-note');
+    if (debugMusicNote) {
+        debugMusicNote.addEventListener('click', () => {
+            debugClickCount++;
+            debugMusicNote.classList.add('clicked');
+            setTimeout(() => debugMusicNote.classList.remove('clicked'), 300);
+            
+            if (debugClickCount >= 7) {
+                toggleDebugMode();
+                debugClickCount = 0;
+            }
+            
+            // Reset counter after 3 seconds of no clicks
+            setTimeout(() => {
+                debugClickCount = 0;
+            }, 3000);
+        });
+    }
+    
+    function toggleDebugMode() {
+        debugModeEnabled = !debugModeEnabled;
+        
+        // List of all debug button IDs
+        const debugButtons = [
+            'skip-to-quiz-btn',
+            'skip-to-system-dialogue-btn',
+            'skip-to-countdown2-btn',
+            'skip-to-countdown2-error-btn',
+            'skip-to-countdown-btn', 
+            'skip-to-relief-btn',
+            'skip-to-game-suggestions-btn',
+            'skip-to-hard-victory-btn',
+            'skip-to-mini-games-btn',
+            'skip-to-tic-tac-toe-btn',
+            'skip-to-rock-paper-scissors-btn',
+            'skip-to-color-match-btn',
+            'skip-to-mini-victory-btn',
+            'jump-to-credits-btn',
+            'skip-to-quiz-answers-btn',
+            'skip-to-loading-game-btn',
+            'debug-win-loading-btn',
+            'debug-add-100-btn',
+            'skip-to-answers-btn'
+        ];
+        
+        debugButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                if (debugModeEnabled) {
+                    button.classList.remove('hidden');
+                    button.style.display = 'inline-block';
+                } else {
+                    button.classList.add('hidden');
+                    button.style.display = 'none';
+                }
+            }
+        });
+        
+        // Toggle debug panel
+        const debugPanel = document.querySelector('.debug-panel');
+        if (debugPanel) {
+            debugPanel.style.display = debugModeEnabled ? 'block' : 'none';
+        }
+        
+        // Toggle page marker
+        const pageMarker = document.getElementById('pm');
+        if (pageMarker) {
+            pageMarker.style.display = debugModeEnabled ? 'block' : 'none';
+        }
+        
+        // Show notification
+        showDebugNotification(debugModeEnabled ? 'Debug Mode ENABLED' : 'Debug Mode DISABLED');
+    }
+    
+    function showDebugNotification(message) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 10000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            animation: debugNotificationSlide 3s ease;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 3000);
     }
 
     // Setup music volume
@@ -3523,6 +4674,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Load
     createStars();
+    // Hide debug buttons by default
+    initializeDebugMode();
     // Don't start music automatically - let the quiz step handle it
     backgroundMusic.pause();
     
@@ -3530,6 +4683,174 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         console.log('DOM ready, about to render start step');
         console.log('Landing page element:', pageElements['landing-page']);
+        console.log('Start quiz button element:', document.getElementById('start-quiz-btn'));
+        console.log('All debug buttons:');
+        console.log('- skip-to-mini-games-btn:', document.getElementById('skip-to-mini-games-btn'));
+        console.log('- skip-to-tic-tac-toe-btn:', document.getElementById('skip-to-tic-tac-toe-btn'));
+        
+        
         renderStep('start');
     }, 100);
+    
+    // Credits Easter Egg Functions
+    let creditsTimer;
+    let creditsActive = false;
+    
+    function startCreditsTimer() {
+        console.log('Starting credits timer - 30 seconds until credits button appears...');
+        creditsTimer = setTimeout(() => {
+            if (!creditsActive) {
+                console.log('30 seconds elapsed, showing credits button!');
+                showCreditsButton();
+            }
+        }, 30000); // 30 seconds
+    }
+    
+    function showCreditsButton() {
+        // Create credits button on reveal screen
+        const revealPage = pageElements['hint-page'];
+        const creditsBtn = document.createElement('button');
+        creditsBtn.id = 'reveal-credits-btn';
+        creditsBtn.textContent = '🎬 Credits';
+        creditsBtn.style.cssText = `
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        `;
+        
+        // Add click handler
+        creditsBtn.onclick = () => {
+            console.log('Credits button clicked!');
+            renderStep('credits');
+        };
+        
+        // Add to reveal page
+        revealPage.appendChild(creditsBtn);
+        
+        // Fade in button
+        setTimeout(() => {
+            creditsBtn.style.opacity = '1';
+            creditsBtn.style.transform = 'translateX(-50%) scale(1.05)';
+        }, 100);
+        
+        // Add hover effects
+        creditsBtn.onmouseenter = () => {
+            creditsBtn.style.background = '#FFD700';
+            creditsBtn.style.color = '#000';
+            creditsBtn.style.transform = 'translateX(-50%) scale(1.1)';
+        };
+        
+        creditsBtn.onmouseleave = () => {
+            creditsBtn.style.background = 'rgba(0, 0, 0, 0.8)';
+            creditsBtn.style.color = '#FFD700';
+            creditsBtn.style.transform = 'translateX(-50%) scale(1.05)';
+        };
+    }
+    
+    function startCreditsSequence() {
+        creditsActive = true;
+        console.log('Credits sequence started!');
+        
+        const revealPage = pageElements['hint-page'];
+        const creditsPage = pageElements['credits-page'];
+        const creditsRoll = document.getElementById('credits-roll');
+        
+        // Fade out reveal screen (2 seconds)
+        revealPage.style.transition = 'opacity 2s ease-out';
+        revealPage.style.opacity = '0';
+        
+        // Fade out reveal sound
+        if (revealSound && !revealSound.paused) {
+            const fadeOutInterval = setInterval(() => {
+                if (revealSound.volume > 0.1) {
+                    revealSound.volume -= 0.1;
+                } else {
+                    revealSound.pause();
+                    revealSound.volume = 1; // Reset for next time
+                    clearInterval(fadeOutInterval);
+                }
+            }, 200);
+        } else {
+            revealSound.pause();
+        }
+        
+        // After fade out, show empty credits background first
+        setTimeout(() => {
+            revealPage.classList.add('hidden');
+            creditsPage.classList.remove('hidden');
+            
+            // Hide credits text initially - only show background
+            creditsRoll.style.opacity = '0';
+            
+            console.log('Credits background shown, waiting for introduction...');
+            
+            // Wait 2 seconds, then start credits rolling from bottom with music
+            setTimeout(() => {
+                // Make credits visible and start rolling up from their off-screen position
+                creditsRoll.style.opacity = '1';
+                creditsRoll.style.animation = 'creditsRoll 191s linear forwards'; // Slower to match full music duration
+                
+                // Start credits music simultaneously
+                creditsMusic.volume = 0;
+                creditsMusic.currentTime = 0;
+                creditsMusic.play().catch(e => console.log('Credits music play prevented:', e));
+                
+                // Fade in credits music
+                const fadeInInterval = setInterval(() => {
+                    if (creditsMusic.volume < 0.4) {
+                        creditsMusic.volume += 0.05;
+                    } else {
+                        creditsMusic.volume = 0.4;
+                        clearInterval(fadeInInterval);
+                    }
+                }, 100);
+                
+                console.log('Credits roll and music started after background introduction!');
+                
+            }, 2000);
+            
+        }, 2000);
+        
+        // Show flying button after credits and music finish (2s fade + 2s intro + 80s credits = 84s, but wait for full music at 175s)
+        setTimeout(() => {
+            console.log('Credits finished, showing replay button');
+            showFlyingButton();
+        }, 175000);
+    }
+    
+    function showFlyingButton() {
+        const replayBtn = document.getElementById('credits-replay-btn');
+        replayBtn.classList.remove('hidden');
+        
+        // Add click handler
+        replayBtn.onclick = () => {
+            console.log('Replay button clicked!');
+            creditsActive = false;
+            creditsMusic.pause();
+            creditsMusic.currentTime = 0;
+            renderStep('start');
+        };
+    }
+    
+    // Clear credits timer if user navigates away
+    window.addEventListener('beforeunload', () => {
+        if (creditsTimer) {
+            clearTimeout(creditsTimer);
+        }
+        if (creditsMusic) {
+            creditsMusic.pause();
+        }
+    });
 });
