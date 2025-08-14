@@ -646,25 +646,11 @@ document.addEventListener('DOMContentLoaded', () => {
             page: 'give-up-confirmation-page',
             background: 'gaming',
             music: 'gaming',
-            onLoad: () => {
-                // Show current progress
-                const progressDiv = document.getElementById('progress-summary');
-                let progressText = '';
-                if (miniGamesProgress >= 1) progressText += '✅ Tic-Tac-Toe gemeistert<br>';
-                if (miniGamesProgress >= 2) progressText += '✅ Schere-Stein-Papier gewonnen<br>';
-                if (miniGamesProgress >= 3) progressText += '✅ Connect 3 erobert<br>';
-                
-                if (progressText === '') {
-                    progressText = '🎯 Bereit für das erste Spiel!<br>';
-                } else {
-                    progressText += `📊 ${miniGamesProgress}/3 Spielen abgeschlossen`;
-                }
-                progressDiv.innerHTML = progressText;
-            },
+            onLoad: null,
             buttons: {
                 'confirm-give-up-btn': () => {
                     gamingMusic.pause();
-                    renderStep('start');
+                    renderStep('game-suggestions');
                 },
                 'cancel-give-up-btn': () => {
                     // Go back to the current active game
@@ -3495,7 +3481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             roundResult = 'Du gewinnst die Runde!';
         } else {
             rpsComputerScore++;
-            roundResult = 'Ich gewinne die Runde!';
+            roundResult = 'Computer gewinnt die Runde!';
         }
         
         // Update scores
@@ -3505,8 +3491,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         rpsRound++;
         
-        // Check for game end (best of 5) - HARD MODE: need 3 wins
-        if (rpsPlayerScore === 3 || rpsComputerScore === 3) {
+        // Check for game end (best of 3) - need 2 wins
+        if (rpsPlayerScore === 2 || rpsComputerScore === 2) {
             setTimeout(() => endRPSGame(), 2000);
         } else {
             // Continue game
@@ -3520,8 +3506,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function endRPSGame() {
-        const won = rpsPlayerScore === 3;
-        const message = won ? 'RPS Victory! 🎉 Weiter zum finalen Spiel!' : 'Ich habe gewonnen! 😈';
+        const won = rpsPlayerScore === 2;
+        const message = won ? 'RPS Victory! 🎉 Weiter zum finalen Spiel!' : 'Computer hat gewonnen! 😈 Versuch es nochmal!';
         
         document.getElementById('rps-result').classList.remove('hidden');
         document.getElementById('rps-result-text').textContent = message;
@@ -3987,12 +3973,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let message;
         
         if (playerWon === true) {
-            message = 'Connect 4 Victory! 🎉 Challenge erfolgreich!';
+            message = 'Connect 3 Victory! 🎉 Challenge erfolgreich!';
         } else if (playerWon === false) {
             message = 'KI hat gewonnen! 🤖 Versuch es nochmal!';
         } else {
             message = 'Unentschieden! ⚖️ Beide Connect 3 Profis!';
         }
+        
+        // Clear the status message when game ends
+        document.getElementById('connect4-status').textContent = playerWon === true ? 'Du hast gewonnen!' : 
+            playerWon === false ? 'Computer hat gewonnen!' : 'Unentschieden!';
         
         document.getElementById('connect4-result').classList.remove('hidden');
         document.getElementById('connect4-result-text').textContent = message;
