@@ -4801,7 +4801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (interactiveLoadingActive) {
                 startLoadingClicker(); // Next button set
             }
-        }, Math.random() * 300 + 500); // 500ms to 800ms (VERY fast!)
+        }, Math.random() * 300 + 800); // 800ms to 1100ms
     }
 
     function applyLoadingChange(change) {
