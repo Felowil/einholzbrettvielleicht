@@ -2110,7 +2110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         miniGameActive = true;
         let timeLeft = 15;
         
-        const words = ['GEBURTSTAG', 'GESCHENK', 'PARTY', 'KUCHEN', 'FEIER', 'ÜBERRASCHUNG'];
+        const words = ['HOLZBRETT', 'EINHORN', 'PFIRSICH', 'RUFUS', 'TIMO', 'NIBS'];
         const word = words[Math.floor(Math.random() * words.length)];
         
         // Scramble the word
@@ -3272,11 +3272,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function getBestTicTacToeMove() {
-        // CHALLENGING MODE: 75% optimal play - still beatable with strategy
-        const shouldPlayOptimally = Math.random() < 0.75;
+        // BALANCED MODE: Strong but not perfect to avoid constant ties
+        const shouldPlayOptimally = Math.random() < 0.65; // 65% optimal play
         
         if (shouldPlayOptimally) {
-            // Try to win
+            // Always try to win first
             for (let i = 0; i < 9; i++) {
                 if (ticTacToeBoard[i] === '') {
                     ticTacToeBoard[i] = 'O';
@@ -3288,8 +3288,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Block player wins most of the time (80% chance)
-            if (Math.random() < 0.8) {
+            // Block player wins most of the time (78% chance)
+            if (Math.random() < 0.78) {
                 for (let i = 0; i < 9; i++) {
                     if (ticTacToeBoard[i] === '') {
                         ticTacToeBoard[i] = 'X';
@@ -3302,7 +3302,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Strategic positioning: prioritize center, corners, then edges
+            // Use minimax for optimal play
+            const bestMove = minimax(ticTacToeBoard, 0, true);
+            if (bestMove.position !== undefined) {
+                return bestMove.position;
+            }
+            
+            // Fallback strategic positioning
             const strategicMoves = [4, 0, 2, 6, 8, 1, 3, 5, 7];
             for (let move of strategicMoves) {
                 if (ticTacToeBoard[move] === '') {
@@ -3311,9 +3317,52 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Random move (either because AI chose random or fell through strategic logic)
+        // Occasional random move (25% chance)
         const availableSpots = ticTacToeBoard.map((cell, index) => cell === '' ? index : null).filter(val => val !== null);
         return availableSpots[Math.floor(Math.random() * availableSpots.length)];
+    }
+
+    function minimax(board, depth, isMaximizing) {
+        // Check terminal states
+        if (checkTicTacToeWin('O')) return { score: 10 - depth };
+        if (checkTicTacToeWin('X')) return { score: depth - 10 };
+        if (board.every(cell => cell !== '')) return { score: 0 };
+        
+        if (isMaximizing) {
+            let bestScore = -Infinity;
+            let bestPosition;
+            
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === '') {
+                    board[i] = 'O';
+                    const score = minimax(board, depth + 1, false).score;
+                    board[i] = '';
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestPosition = i;
+                    }
+                }
+            }
+            return { score: bestScore, position: bestPosition };
+        } else {
+            let bestScore = Infinity;
+            let bestPosition;
+            
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === '') {
+                    board[i] = 'X';
+                    const score = minimax(board, depth + 1, true).score;
+                    board[i] = '';
+                    
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestPosition = i;
+                    }
+                }
+            }
+            return { score: bestScore, position: bestPosition };
+        }
     }
     
     function checkTicTacToeWin(player) {
@@ -3369,32 +3418,70 @@ document.addEventListener('DOMContentLoaded', () => {
         const history = window.rpsPlayerHistory;
         if (history.length < 2) return 'rock'; // default
         
-        // Look for most recent pattern
+        // Advanced pattern recognition with multiple strategies
         const lastChoice = history[history.length - 1];
         const secondLastChoice = history[history.length - 2];
+        const thirdLastChoice = history.length >= 3 ? history[history.length - 3] : null;
         
-        // Look for sequences and tendencies
-        const counts = { rock: 0, paper: 0, scissors: 0 };
-        history.forEach(choice => counts[choice]++);
-        
-        // If player is repeating patterns, predict they'll continue
-        if (lastChoice === secondLastChoice) {
-            return lastChoice; // Player likes to repeat
-        }
-        
-        // If player alternates, predict the opposite of last choice
-        const sequences = history.slice(-3);
-        if (sequences.length === 3) {
-            if (sequences[0] !== sequences[1] && sequences[1] !== sequences[2]) {
-                // Player is alternating, predict they'll switch again
-                const options = ['rock', 'paper', 'scissors'];
-                return options.find(choice => choice !== lastChoice && choice !== secondLastChoice);
+        // Strategy 1: Look for exact sequence patterns (3-4 moves)
+        if (history.length >= 4) {
+            const last3 = history.slice(-3).join('');
+            for (let i = 0; i < history.length - 3; i++) {
+                const seq = history.slice(i, i + 3).join('');
+                if (seq === last3 && i + 3 < history.length) {
+                    return history[i + 3]; // Found matching pattern, predict next
+                }
             }
         }
         
-        // Predict the least used choice (players often balance their choices)
-        const leastUsed = Object.keys(counts).reduce((a, b) => counts[a] <= counts[b] ? a : b);
-        return leastUsed;
+        // Strategy 2: Counter frequency-based prediction  
+        const counts = { rock: 0, paper: 0, scissors: 0 };
+        history.forEach(choice => counts[choice]++);
+        const mostFrequent = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+        
+        // Strategy 3: Look for anti-frequency (what player avoids)
+        const recentHistory = history.slice(-Math.min(6, history.length));
+        const recentCounts = { rock: 0, paper: 0, scissors: 0 };
+        recentHistory.forEach(choice => recentCounts[choice]++);
+        const leastRecent = Object.keys(recentCounts).reduce((a, b) => recentCounts[a] < recentCounts[b] ? a : b);
+        
+        // Strategy 4: Detect repetition patterns
+        if (lastChoice === secondLastChoice && thirdLastChoice === lastChoice) {
+            return lastChoice; // Strong repetition pattern
+        }
+        
+        // Strategy 5: Detect alternating patterns with higher complexity
+        if (history.length >= 4) {
+            const last4 = history.slice(-4);
+            if (last4[0] === last4[2] && last4[1] === last4[3] && last4[0] !== last4[1]) {
+                return last4[0]; // ABAB pattern, predict A
+            }
+        }
+        
+        // Strategy 6: Meta-gaming - if player beat us recently, they might repeat
+        if (window.rpsRecentResults && window.rpsRecentResults.length > 0) {
+            const lastResult = window.rpsRecentResults[window.rpsRecentResults.length - 1];
+            if (lastResult === 'player_win') {
+                return lastChoice; // Player might stick with winning choice
+            }
+        }
+        
+        // Strategy 7: Weighted prediction based on multiple factors
+        const predictions = [mostFrequent, leastRecent, lastChoice];
+        const weights = [0.4, 0.3, 0.3];
+        
+        // Choose prediction based on weighted random
+        const random = Math.random();
+        let cumulative = 0;
+        for (let i = 0; i < predictions.length; i++) {
+            cumulative += weights[i];
+            if (random <= cumulative) {
+                return predictions[i];
+            }
+        }
+        
+        // Fallback to frequency analysis
+        return mostFrequent;
     }
 
     function initRockPaperScissors() {
@@ -3429,21 +3516,72 @@ document.addEventListener('DOMContentLoaded', () => {
         window.rpsPlayerHistory.push(playerChoice);
         window.rpsRoundNumber++;
         
-        // 80% chance to use pattern analysis, 20% random to keep some unpredictability
-        if (Math.random() < 0.8 && window.rpsPlayerHistory.length >= 2) {
-            // Predict based on player patterns
-            const predictedChoice = predictPlayerChoice();
+        // 85% chance to use advanced pattern analysis, 15% strategic randomness
+        if (Math.random() < 0.85 && window.rpsPlayerHistory.length >= 2) {
+            // Track results for meta-gaming
+            if (!window.rpsRecentResults) window.rpsRecentResults = [];
+            
+            // Use multiple prediction strategies and counter them
+            const predictions = [];
+            
+            // Primary prediction
+            predictions.push(predictPlayerChoice());
+            
+            // Secondary: Counter-counter psychology (what if they expect us to counter?)
+            if (window.rpsPlayerHistory.length >= 3) {
+                const prevChoice = window.rpsPlayerHistory[window.rpsPlayerHistory.length - 2];
+                predictions.push(prevChoice);
+            }
+            
+            // Tertiary: Anti-meta (assume they're trying to be unpredictable)
+            const recentChoices = window.rpsPlayerHistory.slice(-3);
+            if (recentChoices.length >= 3) {
+                const unused = ['rock', 'paper', 'scissors'].filter(choice => 
+                    !recentChoices.includes(choice)
+                );
+                if (unused.length > 0) {
+                    predictions.push(unused[0]);
+                }
+            }
+            
+            // Choose best prediction based on recent success
+            let bestPrediction = predictions[0];
+            
+            // Weight predictions by recent AI success rate
+            if (window.rpsRecentResults.length >= 2) {
+                const recentAIWins = window.rpsRecentResults.slice(-4).filter(r => r === 'ai_win').length;
+                if (recentAIWins >= 3) {
+                    // AI is winning too much, player might adapt - use more complex prediction
+                    bestPrediction = predictions[Math.min(predictions.length - 1, 1)];
+                }
+            }
+            
             // Counter the predicted choice
             const counterMap = {
                 'rock': 'paper',
                 'paper': 'scissors', 
                 'scissors': 'rock'
             };
-            computerChoice = counterMap[predictedChoice];
+            computerChoice = counterMap[bestPrediction];
+            
         } else {
-            // Strategic fallback - bias toward winning moves
+            // Intelligent randomness - adapt based on player's recent performance
             const choices = ['rock', 'paper', 'scissors'];
-            const weights = [0.4, 0.35, 0.25]; // Slightly favor rock and paper
+            let weights = [0.33, 0.34, 0.33]; // Default equal
+            
+            // Adjust weights based on player patterns
+            if (window.rpsPlayerHistory.length >= 4) {
+                const recent = window.rpsPlayerHistory.slice(-4);
+                const rockCount = recent.filter(c => c === 'rock').length;
+                const paperCount = recent.filter(c => c === 'paper').length;
+                const scissorsCount = recent.filter(c => c === 'scissors').length;
+                
+                // Counter the most frequent recent choice
+                if (rockCount >= 2) weights = [0.2, 0.6, 0.2]; // More paper to counter rock
+                else if (paperCount >= 2) weights = [0.2, 0.2, 0.6]; // More scissors to counter paper
+                else if (scissorsCount >= 2) weights = [0.6, 0.2, 0.2]; // More rock to counter scissors
+            }
+            
             const random = Math.random();
             let cumulative = 0;
             for (let i = 0; i < choices.length; i++) {
@@ -3484,6 +3622,20 @@ document.addEventListener('DOMContentLoaded', () => {
             roundResult = 'Computer gewinnt die Runde!';
         }
         
+        // Track results for AI learning
+        if (!window.rpsRecentResults) window.rpsRecentResults = [];
+        if (roundResult.includes('Du gewinnst')) {
+            window.rpsRecentResults.push('player_win');
+        } else if (roundResult.includes('Computer gewinnt')) {
+            window.rpsRecentResults.push('ai_win');
+        } else {
+            window.rpsRecentResults.push('tie');
+        }
+        // Keep only last 10 results for performance
+        if (window.rpsRecentResults.length > 10) {
+            window.rpsRecentResults = window.rpsRecentResults.slice(-10);
+        }
+        
         // Update scores
         document.getElementById('rps-player-score').textContent = rpsPlayerScore;
         document.getElementById('rps-computer-score').textContent = rpsComputerScore;
@@ -3491,8 +3643,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         rpsRound++;
         
-        // Check for game end (best of 3) - need 2 wins
-        if (rpsPlayerScore === 2 || rpsComputerScore === 2) {
+        // Check for game end (best of 5) - need 3 wins
+        if (rpsPlayerScore === 3 || rpsComputerScore === 3) {
             setTimeout(() => endRPSGame(), 2000);
         } else {
             // Continue game
@@ -3506,7 +3658,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function endRPSGame() {
-        const won = rpsPlayerScore === 2;
+        const won = rpsPlayerScore === 3;
         const message = won ? 'RPS Victory! 🎉 Weiter zum finalen Spiel!' : 'Computer hat gewonnen! 😈 Versuch es nochmal!';
         
         document.getElementById('rps-result').classList.remove('hidden');
@@ -3680,76 +3832,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function makeAIMove() {
         if (connect4GameOver) return;
         
-        // Enhanced AI strategy with multiple priorities:
-        // 1. Try to win immediately
-        // 2. Block player from winning
-        // 3. Create multiple threats (fork)
-        // 4. Build towards 3-in-a-row
-        // 5. Play strategic positions
-        // 6. Prefer center columns
-        // 7. Avoid giving player winning opportunities
-        
+        // CHALLENGING AI: Use minimax but with limited depth for balance
+        const useOptimalPlay = Math.random() < 0.95; // 95% chance for optimal play
         let bestCol = -1;
-        let bestScore = -1000;
         
-        // Evaluate all possible moves
-        for (let col = 0; col < connect4Columns; col++) {
-            const testRow = getLowestEmptyRow(col);
-            if (testRow === -1) continue; // Column full
-            
-            let score = 0;
-            
-            // Test AI move
-            connect4Grid[testRow][col] = 2;
-            
-            // Priority 1: Check for winning move (highest priority)
-            if (checkConnect4Win(testRow, col, 2)) {
-                connect4Grid[testRow][col] = 0;
-                bestCol = col;
-                break; // Immediate win, take it!
-            }
-            
-            // Priority 2: Check if this prevents player win (very high priority)
-            connect4Grid[testRow][col] = 1; // Test player move
-            if (checkConnect4Win(testRow, col, 1)) {
-                score += 500; // High priority to block
-            }
-            connect4Grid[testRow][col] = 2; // Back to AI move
-            
-            // Priority 3: Count potential winning threats this move creates
-            score += countPotentialWins(testRow, col, 2) * 100;
-            
-            // Priority 4: Evaluate position strength (connections)
-            score += evaluatePosition(testRow, col, 2) * 10;
-            
-            // Priority 5: Center column preference (strategic)
-            if (col === 2) score += 20; // Center column
-            if (col === 1 || col === 3) score += 15; // Near center
-            
-            // Priority 6: Avoid giving player opportunities
-            if (testRow > 0) {
-                connect4Grid[testRow - 1][col] = 1; // Test if player could win above
-                if (checkConnect4Win(testRow - 1, col, 1)) {
-                    score -= 200; // Penalty for giving player a win
-                }
-                connect4Grid[testRow - 1][col] = 0; // Reset
-            }
-            
-            // Priority 7: Build vertical threats
-            if (testRow < connect4Rows - 1 && connect4Grid[testRow + 1][col] === 2) {
-                score += 30; // Build on our pieces
-            }
-            
-            connect4Grid[testRow][col] = 0; // Reset
-            
-            // Track best move
-            if (score > bestScore) {
-                bestScore = score;
-                bestCol = col;
-            }
+        if (useOptimalPlay) {
+            const depth = 6; // Look ahead 6 moves (very challenging)
+            const result = minimaxConnect4(connect4Grid, depth, -Infinity, Infinity, true);
+            bestCol = result.column;
         }
         
-        // Fallback: if no good move found, prefer center
+        // If minimax didn't find a good move or we're playing sub-optimally, use heuristics
+        if (bestCol === -1) {
+            bestCol = getAdvancedHeuristicMove();
+        }
+        
+        // Final fallback: prefer center columns
         if (bestCol === -1) {
             const centerCols = [2, 1, 3, 0, 4];
             for (const col of centerCols) {
@@ -3759,7 +3857,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         // Make the move
         if (bestCol !== -1) {
             const targetRow = getLowestEmptyRow(bestCol);
@@ -3771,20 +3869,334 @@ document.addEventListener('DOMContentLoaded', () => {
             const aiWinPositions = checkConnect4Win(targetRow, bestCol, 2);
             if (aiWinPositions) {
                 highlightWinningPieces(aiWinPositions);
-                setTimeout(() => endConnect4Game(false), 1000); // Delay to show highlight
+                setTimeout(() => endConnect4Game(false), 1000); // AI wins
                 return;
             }
             
             // Check for tie
             if (isConnect4BoardFull()) {
-                endConnect4Game(null);
+                endConnect4Game(null); // Tie
                 return;
             }
             
             // Player's turn
             connect4CurrentPlayer = 1;
-            document.getElementById('connect4-status').textContent = 'Du bist dran! Klicke auf eine Spalte!';
+            document.getElementById('connect4-status').textContent = 'Du bist dran! Wähle eine Spalte.';
         }
+    }
+
+    function minimaxConnect4(grid, depth, alpha, beta, maximizing) {
+        // Check terminal conditions
+        const gameState = checkConnect4GameState(grid);
+        if (gameState !== null) {
+            if (gameState === 2) return { score: 1000 + depth, column: -1 }; // AI wins
+            if (gameState === 1) return { score: -1000 - depth, column: -1 }; // Player wins
+            return { score: 0, column: -1 }; // Tie
+        }
+        
+        if (depth === 0) {
+            return { score: evaluateConnect4Board(grid), column: -1 };
+        }
+        
+        let bestScore = maximizing ? -Infinity : Infinity;
+        let bestColumn = -1;
+        
+        // Try all columns in order of preference (center first)
+        const columnOrder = [2, 1, 3, 0, 4];
+        
+        for (const col of columnOrder) {
+            const row = getLowestEmptyRowInGrid(grid, col);
+            if (row === -1) continue; // Column full
+            
+            // Make move
+            grid[row][col] = maximizing ? 2 : 1;
+            
+            const result = minimaxConnect4(grid, depth - 1, alpha, beta, !maximizing);
+            
+            // Undo move
+            grid[row][col] = 0;
+            
+            if (maximizing) {
+                if (result.score > bestScore) {
+                    bestScore = result.score;
+                    bestColumn = col;
+                }
+                alpha = Math.max(alpha, bestScore);
+            } else {
+                if (result.score < bestScore) {
+                    bestScore = result.score;
+                    bestColumn = col;
+                }
+                beta = Math.min(beta, bestScore);
+            }
+            
+            // Alpha-beta pruning
+            if (beta <= alpha) {
+                break;
+            }
+        }
+        
+        return { score: bestScore, column: bestColumn };
+    }
+
+    function getAdvancedHeuristicMove() {
+        let bestCol = -1;
+        let bestScore = -10000;
+        
+        for (let col = 0; col < connect4Columns; col++) {
+            const testRow = getLowestEmptyRow(col);
+            if (testRow === -1) continue;
+            
+            let score = 0;
+            
+            // Test AI move
+            connect4Grid[testRow][col] = 2;
+            
+            // Priority 1: Check for immediate win
+            if (checkConnect4Win(testRow, col, 2)) {
+                connect4Grid[testRow][col] = 0;
+                return col; // Immediate win!
+            }
+            
+            // Priority 2: Block player wins (multiple moves ahead)
+            score += blockPlayerThreats(testRow, col) * 1000;
+            
+            // Priority 3: Create multiple threats
+            score += countPotentialWins(testRow, col, 2) * 200;
+            
+            // Priority 4: Advanced position evaluation
+            score += evaluatePositionAdvanced(testRow, col, 2) * 50;
+            
+            // Priority 5: Control center positions
+            if (col === 2) score += 30;
+            if (col === 1 || col === 3) score += 20;
+            
+            // Priority 6: Prevent giving player opportunities (deeper check)
+            score -= evaluatePlayerOpportunities(testRow, col) * 300;
+            
+            // Priority 7: Build connected sequences
+            score += evaluateConnections(testRow, col, 2) * 100;
+            
+            connect4Grid[testRow][col] = 0; // Reset
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestCol = col;
+            }
+        }
+        
+        return bestCol;
+    }
+
+    // Helper functions for advanced Connect 4 AI
+    function checkConnect4GameState(grid) {
+        // Check if anyone has won or if board is full
+        for (let row = 0; row < connect4Rows; row++) {
+            for (let col = 0; col < connect4Columns; col++) {
+                if (grid[row][col] !== 0) {
+                    if (checkConnect4WinFromPosition(grid, row, col, grid[row][col])) {
+                        return grid[row][col];
+                    }
+                }
+            }
+        }
+        
+        // Check for tie
+        let full = true;
+        for (let col = 0; col < connect4Columns; col++) {
+            if (grid[0][col] === 0) {
+                full = false;
+                break;
+            }
+        }
+        return full ? 0 : null; // 0 for tie, null for ongoing game
+    }
+
+    function checkConnect4WinFromPosition(grid, row, col, player) {
+        const directions = [
+            [0, 1], [1, 0], [1, 1], [1, -1] // horizontal, vertical, diagonal
+        ];
+        
+        for (const [dr, dc] of directions) {
+            let count = 1;
+            
+            // Check positive direction
+            for (let i = 1; i < 3; i++) {
+                const newRow = row + dr * i;
+                const newCol = col + dc * i;
+                if (newRow >= 0 && newRow < connect4Rows && 
+                    newCol >= 0 && newCol < connect4Columns && 
+                    grid[newRow][newCol] === player) {
+                    count++;
+                } else break;
+            }
+            
+            // Check negative direction
+            for (let i = 1; i < 3; i++) {
+                const newRow = row - dr * i;
+                const newCol = col - dc * i;
+                if (newRow >= 0 && newRow < connect4Rows && 
+                    newCol >= 0 && newCol < connect4Columns && 
+                    grid[newRow][newCol] === player) {
+                    count++;
+                } else break;
+            }
+            
+            if (count >= 3) return true;
+        }
+        return false;
+    }
+
+    function getLowestEmptyRowInGrid(grid, col) {
+        for (let row = connect4Rows - 1; row >= 0; row--) {
+            if (grid[row][col] === 0) return row;
+        }
+        return -1;
+    }
+
+    function evaluateConnect4Board(grid) {
+        let score = 0;
+        
+        // Evaluate all positions for both players
+        for (let row = 0; row < connect4Rows; row++) {
+            for (let col = 0; col < connect4Columns; col++) {
+                if (grid[row][col] !== 0) {
+                    score += evaluatePositionScore(grid, row, col, grid[row][col]);
+                }
+            }
+        }
+        
+        return score;
+    }
+
+    function evaluatePositionScore(grid, row, col, player) {
+        let score = 0;
+        const multiplier = player === 2 ? 1 : -1; // AI is positive, player is negative
+        
+        // Center column preference
+        if (col === 2) score += 3;
+        if (col === 1 || col === 3) score += 2;
+        
+        // Count potential connections
+        const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+        
+        for (const [dr, dc] of directions) {
+            let connected = 1;
+            let spaces = 0;
+            
+            // Check in both directions
+            for (const direction of [1, -1]) {
+                for (let i = 1; i < 3; i++) {
+                    const newRow = row + dr * i * direction;
+                    const newCol = col + dc * i * direction;
+                    
+                    if (newRow >= 0 && newRow < connect4Rows && 
+                        newCol >= 0 && newCol < connect4Columns) {
+                        if (grid[newRow][newCol] === player) {
+                            connected++;
+                        } else if (grid[newRow][newCol] === 0) {
+                            spaces++;
+                            break;
+                        } else {
+                            break; // Blocked by opponent
+                        }
+                    }
+                }
+            }
+            
+            // Score based on potential
+            if (connected >= 2 && spaces > 0) {
+                score += connected * 10;
+            }
+        }
+        
+        return score * multiplier;
+    }
+
+    function blockPlayerThreats(row, col) {
+        let threats = 0;
+        
+        // Check if placing AI piece here blocks immediate player threats
+        connect4Grid[row][col] = 1; // Test player move
+        if (checkConnect4Win(row, col, 1)) {
+            threats += 10; // High priority block
+        }
+        connect4Grid[row][col] = 2; // Reset to AI move
+        
+        return threats;
+    }
+
+    function evaluatePositionAdvanced(row, col, player) {
+        let score = 0;
+        
+        // Advanced position evaluation considering multiple factors
+        const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+        
+        for (const [dr, dc] of directions) {
+            let consecutive = 1;
+            let openSpaces = 0;
+            
+            // Count consecutive pieces and open spaces
+            for (const dir of [1, -1]) {
+                for (let i = 1; i < 3; i++) {
+                    const newRow = row + dr * i * dir;
+                    const newCol = col + dc * i * dir;
+                    
+                    if (newRow >= 0 && newRow < connect4Rows && 
+                        newCol >= 0 && newCol < connect4Columns) {
+                        if (connect4Grid[newRow][newCol] === player) {
+                            consecutive++;
+                        } else if (connect4Grid[newRow][newCol] === 0) {
+                            openSpaces++;
+                            break;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            score += consecutive * consecutive + openSpaces;
+        }
+        
+        return score;
+    }
+
+    function evaluatePlayerOpportunities(row, col) {
+        let opportunities = 0;
+        
+        // Check if this move gives player winning opportunities above
+        if (row > 0) {
+            connect4Grid[row - 1][col] = 1;
+            if (checkConnect4Win(row - 1, col, 1)) {
+                opportunities += 5;
+            }
+            connect4Grid[row - 1][col] = 0;
+        }
+        
+        return opportunities;
+    }
+
+    function evaluateConnections(row, col, player) {
+        let connections = 0;
+        
+        // Look for existing connected pieces
+        const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+        
+        for (const [dr, dc] of directions) {
+            for (const dir of [1, -1]) {
+                const adjacentRow = row + dr * dir;
+                const adjacentCol = col + dc * dir;
+                
+                if (adjacentRow >= 0 && adjacentRow < connect4Rows && 
+                    adjacentCol >= 0 && adjacentCol < connect4Columns && 
+                    connect4Grid[adjacentRow][adjacentCol] === player) {
+                    connections++;
+                }
+            }
+        }
+        
+        return connections;
     }
     
     function getLowestEmptyRow(col) {

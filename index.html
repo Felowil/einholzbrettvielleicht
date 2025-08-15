@@ -117,7 +117,7 @@
             <button id="skip-to-mini-games-btn" class="debug-button">Mini Games</button>
             <button id="skip-to-tic-tac-toe-btn" class="debug-button">Tic Tac Toe</button>
             <button id="skip-to-rock-paper-scissors-btn" class="debug-button">Rock Paper</button>
-            <button id="skip-to-color-match-btn" class="debug-button">Connect 3</button>
+            <button id="skip-to-color-match-btn" class="debug-button">3 Gewinnt</button>
             <button id="skip-to-mini-victory-btn" class="debug-button">Mini Victory</button>
             <button id="jump-to-credits-btn" class="debug-button">🎬 Credits</button>
             <button id="skip-to-quiz-answers-btn" class="debug-button">📋 Quiz Answers</button>
@@ -421,7 +421,7 @@
                         <div style="font-size: 1.8em; animation: gentleSpin 6s linear infinite;">🎯</div>
                         <div style="flex: 1;">
                             <h3 style="color: #FFD700; margin: 0; font-size: 1em; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">MINI-GAMES</h3>
-                            <p style="color: #FFF; margin: 2px 0; font-size: 0.75em; text-shadow: 1px 1px 1px rgba(0,0,0,0.3);">Tic-Tac-Toe • RPS • Connect 3 ✨</p>
+                            <p style="color: #FFF; margin: 2px 0; font-size: 0.75em; text-shadow: 1px 1px 1px rgba(0,0,0,0.3);">Tic-Tac-Toe • RPS • 3 Gewinnt ✨</p>
                         </div>
                     </div>
                     <button id="choose-mini-games-btn" class="mobile-btn mini-btn-mobile" style="width: 100%; padding: 10px; margin-top: 8px; background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; border-radius: 6px; font-size: 0.9em; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
@@ -535,7 +535,7 @@
                 <div style="color: #FFD700; font-size: 1.5em;">→</div>
                 <div style="text-align: center;">
                     <div style="font-size: 2em;">🔴</div>
-                    <div style="color: #FFF; font-size: 0.9em;">Spiel 3<br>Connect 3</div>
+                    <div style="color: #FFF; font-size: 0.9em;">Spiel 3<br>3 Gewinnt</div>
                 </div>
                 <div style="color: #FFD700; font-size: 1.5em;">→</div>
                 <div style="text-align: center;">
@@ -584,8 +584,8 @@
 
     <div class="container hidden" id="rock-paper-scissors-game-page">
         <div class="card pop-in">
-            <h2>🎯 Spiel 2/3: Schere, Stein, Papier</h2>
-            <p>Best of 3 - wer mehr Runden gewinnt, gewinnt das Spiel!</p>
+            <h2>🎯 Spiel 2/3: Schere, Stein, Papier (Best of 5)</h2>
+            <p>Best of 5 - wer zuerst 3 Runden gewinnt, gewinnt das Spiel!</p>
             <div style="display: flex; justify-content: space-around; align-items: center; margin: 30px 0;">
                 <div style="text-align: center;">
                     <h3>Du</h3>
@@ -615,7 +615,7 @@
 
     <div class="container hidden" id="memory-match-game-page">
         <div class="card pop-in">
-            <h2>🎯 Spiel 3/3: Connect 3 Schlacht!</h2>
+            <h2>🎯 Spiel 3/3: 3 Gewinnt Schlacht!</h2>
             <p><strong>STRATEGISCHES DENKEN:</strong> Erste 3 in einer Reihe gewinnt!</p>
             
             <!-- Game Status -->
@@ -678,7 +678,7 @@
     <div class="container hidden" id="game-disappointed-page">
         <div class="card pop-in disappointed-card" style="background: linear-gradient(135deg, #4a4a4a 0%, #2c2c2c 100%); border: 2px solid #666; position: relative; overflow: hidden;">
             <!-- Sad rain effect -->
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><text y=\"30\" font-size=\"12\" fill=\"%236699cc\">💧</text></svg>'); opacity: 0.1; animation: sadRain 4s linear infinite; pointer-events: none;"></div>
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; animation: sadRain 4s linear infinite; pointer-events: none;">💧💧💧💧💧</div>
             
             <!-- Disappointed emoji -->
             <div style="text-align: center; margin-bottom: 15px; position: relative; z-index: 2;">
