@@ -2327,7 +2327,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hint: "7"
         },
         {
-            question: "Englisch für Nein, Deutsch für who, Ist Braun und lebt im Wald?",
+            question: "Englisch für Nein, Deutsch für whom, Ist Braun und lebt im Wald?",
             type: "dropdown-select",
             options: ["Oktober","Wat?!?","November", "Dezember", "Nein","Januar"],
             answer: "November",
@@ -4801,7 +4801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (interactiveLoadingActive) {
                 startLoadingClicker(); // Next button set
             }
-        }, Math.random() * 300 + 800); // 800ms to 1100ms
+        }, Math.random() * 300 + 650); // 650ms to 950ms
     }
 
     function applyLoadingChange(change) {
