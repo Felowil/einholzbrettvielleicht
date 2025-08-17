@@ -2302,32 +2302,32 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             question: "Ich mische Tränke und spreche Zauberformeln. Wer bin ich?",
             type: "multiple-choice",
-            options: ["Ein Koch", "Ein Apotheker", "Ein Zauberer", "Ein Arzt", "Ein Harry Potter", "Ein Ei", "Ein Szweidrei"],
+            options: ["Ein Koch", "Ein Apotheker", "Ein Arzt", "Ein Zauberer", "Ein Harry Potter", "Ein Ei", "Ein Szweidrei"],
             answer: "Ein Zauberer",
             hint: "Zauberer"
         },
         {
             question: "Wo kann man Moshpits erleben",
             type: "dropdown-select",
-            options: ["Bibliothek", "Konzert", "Supermarkt", "im Bürooo", "im Bett", "auf dem Klo"],
+            options: ["Bibliothek", "Supermarkt", "im Bürooo", "im Bett", "auf dem Klo", "Konzert"],
             answer: "Konzert",
             hint: "Konzert"
         },
         {
             question: "Wer ist der brillante Kopf hinter diesem Geschenk?",
             type: "multiple-choice",
-            options: ["Ein Superheld", "Ein Geheimagent", "Dein bezaubernder Ehegatte", "Der Weihnachtsmann", "Rufus" , "Rufus und Nibs", "Nibs und Rufus", "Ein Holzbrett"],
+            options: ["Ein Superheld", "Ein Geheimagent", "Der Weihnachtsmann", "Rufus" , "Dein bezaubernder Ehegatte", "Rufus und Nibs", "Nibs und Rufus", "Ein Holzbrett"],
             answer: "Dein bezaubernder Ehegatte",
             hint: "Dein bezaubernder Ehegatte"
         },
         {
-            question: "Denk dir eine Zahl zwischen 1 und 9 aus. Nehme sie mit mal 2, dann mal 3. Addiere deine ausgedachte Zahl und teile das Ergebnis durch deine ausgedachte Zahl",
+            question: "Denk dir eine Zahl zwischen 1 und 9 aus. Nehme sie mit 2 mal, dann mal 3. Addiere deine ausgedachte Zahl und teile das Ergebnis durch deine ausgedachte Zahl",
             type: "number",
             answer: 7,
             hint: "7"
         },
         {
-            question: "Englisch für Nein, Deutsch für whom, Ist Braun und lebt im Wald?",
+            question: "Mein lateinischer Name bedeutet 'neun', doch die Römer haben mich verschoben. Welcher Monat bin ich?",
             type: "dropdown-select",
             options: ["Oktober","Wat?!?","November", "Dezember", "Nein","Januar"],
             answer: "November",
@@ -3288,8 +3288,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Block player wins most of the time (78% chance)
-            if (Math.random() < 0.78) {
+            // Block player wins most of the time (85% chance)
+            if (Math.random() < 0.85) {
                 for (let i = 0; i < 9; i++) {
                     if (ticTacToeBoard[i] === '') {
                         ticTacToeBoard[i] = 'X';
@@ -3517,7 +3517,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.rpsRoundNumber++;
         
         // 85% chance to use advanced pattern analysis, 15% strategic randomness
-        if (Math.random() < 0.85 && window.rpsPlayerHistory.length >= 2) {
+        if (Math.random() < 0.90 && window.rpsPlayerHistory.length >= 2) {
             // Track results for meta-gaming
             if (!window.rpsRecentResults) window.rpsRecentResults = [];
             
@@ -3836,15 +3836,69 @@ document.addEventListener('DOMContentLoaded', () => {
         const useOptimalPlay = Math.random() < 0.95; // 95% chance for optimal play
         let bestCol = -1;
         
+        
         if (useOptimalPlay) {
-            const depth = 6; // Look ahead 6 moves (very challenging)
-            const result = minimaxConnect4(connect4Grid, depth, -Infinity, Infinity, true);
-            bestCol = result.column;
+            // First priority: Check for immediate winning moves for AI
+            for (let col = 0; col < connect4Columns; col++) {
+                const row = getLowestEmptyRow(col);
+                if (row !== -1) {
+                    // Test if AI would win by placing here
+                    connect4Grid[row][col] = 2;
+                    if (checkConnect4Win(row, col, 2)) {
+                        connect4Grid[row][col] = 0; // Undo test
+                        bestCol = col; // Take the win!
+                        break;
+                    }
+                    connect4Grid[row][col] = 0; // Undo test
+                }
+            }
+            
+            // Second priority: Check for immediate threats to block
+            if (bestCol === -1) {
+                for (let col = 0; col < connect4Columns; col++) {
+                    const row = getLowestEmptyRow(col);
+                    if (row !== -1) {
+                        // Test if player would win by placing here
+                        connect4Grid[row][col] = 1;
+                        if (checkConnect4Win(row, col, 1)) {
+                            connect4Grid[row][col] = 0; // Undo test
+                            bestCol = col; // Block this threat!
+                            break;
+                        }
+                        connect4Grid[row][col] = 0; // Undo test
+                    }
+                }
+            }
+            
+            // If no immediate threat, use simple strategic rules
+            if (bestCol === -1) {
+                // Find player's last move
+                let playerLastCol = -1;
+                for (let col = 0; col < connect4Columns; col++) {
+                    for (let row = 0; row < connect4Rows; row++) {
+                        if (connect4Grid[row][col] === 1) {
+                            playerLastCol = col;
+                            break;
+                        }
+                    }
+                }
+                // Strategic move priority: adjacent to player's pieces to block/attack
+                const strategicOrder = [2, 1, 3, 0, 4]; // Center-out strategy
+                for (const col of strategicOrder) {
+                    const row = getLowestEmptyRow(col);
+                    if (row !== -1 && col !== playerLastCol) {
+                        bestCol = col;
+                        break;
+                    }
+                }
+            }
         }
         
         // If minimax didn't find a good move or we're playing sub-optimally, use heuristics
         if (bestCol === -1) {
+            console.log('Using heuristics fallback');
             bestCol = getAdvancedHeuristicMove();
+            console.log('Heuristics result - column:', bestCol);
         }
         
         // Final fallback: prefer center columns
@@ -3889,6 +3943,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check terminal conditions
         const gameState = checkConnect4GameState(grid);
         if (gameState !== null) {
+            if (depth === 8) console.log('Terminal state detected:', gameState);
             if (gameState === 2) return { score: 1000 + depth, column: -1 }; // AI wins
             if (gameState === 1) return { score: -1000 - depth, column: -1 }; // Player wins
             return { score: 0, column: -1 }; // Tie
@@ -3901,8 +3956,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let bestScore = maximizing ? -Infinity : Infinity;
         let bestColumn = -1;
         
-        // Try all columns in order of preference (center first)
-        const columnOrder = [2, 1, 3, 0, 4];
+        // Try all columns in order of preference (include edges early)
+        const columnOrder = [2, 1, 3, 4, 0];
         
         for (const col of columnOrder) {
             const row = getLowestEmptyRowInGrid(grid, col);
@@ -4021,25 +4076,25 @@ document.addEventListener('DOMContentLoaded', () => {
             let count = 1;
             
             // Check positive direction
-            for (let i = 1; i < 3; i++) {
-                const newRow = row + dr * i;
-                const newCol = col + dc * i;
-                if (newRow >= 0 && newRow < connect4Rows && 
-                    newCol >= 0 && newCol < connect4Columns && 
-                    grid[newRow][newCol] === player) {
-                    count++;
-                } else break;
+            let checkRow = row + dr;
+            let checkCol = col + dc;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns && 
+                   grid[checkRow][checkCol] === player) {
+                count++;
+                checkRow += dr;
+                checkCol += dc;
             }
             
             // Check negative direction
-            for (let i = 1; i < 3; i++) {
-                const newRow = row - dr * i;
-                const newCol = col - dc * i;
-                if (newRow >= 0 && newRow < connect4Rows && 
-                    newCol >= 0 && newCol < connect4Columns && 
-                    grid[newRow][newCol] === player) {
-                    count++;
-                } else break;
+            checkRow = row - dr;
+            checkCol = col - dc;
+            while (checkRow >= 0 && checkRow < connect4Rows && 
+                   checkCol >= 0 && checkCol < connect4Columns && 
+                   grid[checkRow][checkCol] === player) {
+                count++;
+                checkRow -= dr;
+                checkCol -= dc;
             }
             
             if (count >= 3) return true;
@@ -4733,6 +4788,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = btn.textContent;
         console.log('Button clicked:', text);
         
+        // Flash the percentage number
+        const isPositive = text.startsWith('+');
+        const percentageDisplay = document.getElementById('interactive-percentage');
+        
+        if (percentageDisplay) {
+            percentageDisplay.style.color = isPositive ? '#00ff00' : '#ff0000';
+            percentageDisplay.style.textShadow = `0 0 10px ${isPositive ? '#00ff00' : '#ff0000'}`;
+            percentageDisplay.style.fontSize = '1.3em';
+            percentageDisplay.style.fontWeight = 'bold';
+            percentageDisplay.style.transition = 'all 0.1s ease';
+            
+            setTimeout(() => {
+                percentageDisplay.style.color = '';
+                percentageDisplay.style.textShadow = '';
+                percentageDisplay.style.fontSize = '';
+                percentageDisplay.style.fontWeight = '';
+                percentageDisplay.style.transition = '';
+            }, 700);
+        }
+        
         // Parse the percentage correctly (handle both +3% and -2% formats)
         let change;
         if (text.startsWith('+')) {
@@ -4801,7 +4876,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (interactiveLoadingActive) {
                 startLoadingClicker(); // Next button set
             }
-        }, Math.random() * 300 + 650); // 650ms to 950ms
+        }, Math.random() * 250 + 600); // 600ms to 850ms
     }
 
     function applyLoadingChange(change) {
